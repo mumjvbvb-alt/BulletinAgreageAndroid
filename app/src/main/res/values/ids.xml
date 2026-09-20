@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <item name="date" type="id"/>
+    <item name="numeroBon" type="id"/>
+    <item name="producteur" type="id"/>
+    <item name="quantite" type="id"/>
+    <item name="adresse" type="id"/>
+    <item name="pointCollecte" type="id"/>
+    <item name="agreur" type="id"/>
+    <item name="carteIdentite" type="id"/>
+    <item name="poidsSpecifique" type="id"/>
+    <item name="humidite" type="id"/>
+    <item name="ergot" type="id"/>
+    <item name="tamis" type="id"/>
+    <item name="debris" type="id"/>
+    <item name="grainesNuisibles" type="id"/>
+    <item name="impur1Total" type="id"/>
+    <item name="grainsCasses" type="id"/>
+    <item name="grainsBoutes" type="id"/>
+    <item name="grainsRoux" type="id"/>
+    <item name="grainsMouchetes" type="id"/>
+    <item name="grainsPunaises" type="id"/>
+    <item name="grainsPiques" type="id"/>
+    <item name="impur2Total" type="id"/>
+    <item name="mitadin" type="id"/>
+    <item name="bleTendre" type="id"/>
+    <item name="mitadinTotal" type="id"/>
+</resources>
