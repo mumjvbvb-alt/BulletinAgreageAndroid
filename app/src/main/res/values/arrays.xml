@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string-array name="statut_options">
+        <item>Choisir le résultat</item>
+        <item>Accepté</item>
+        <item>Refusé</item>
+    </string-array>
+</resources>
