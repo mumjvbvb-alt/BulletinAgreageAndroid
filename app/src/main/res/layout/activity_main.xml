@@ -4,6 +4,20 @@
     android:fillViewport="true" android:background="#E9E9E9">
     <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content"
         android:orientation="vertical" android:padding="8dp">
+        <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content"
+            android:orientation="horizontal" android:gravity="center_vertical"
+            android:padding="8dp" android:layout_marginBottom="8dp"
+            android:background="#FFFFFF">
+            <TextView android:layout_width="0dp" android:layout_height="48dp"
+                android:layout_weight="1" android:gravity="center_vertical"
+                android:text="État du produit :" android:textStyle="bold"
+                android:textSize="15sp" android:textColor="#111111"/>
+            <Spinner android:id="@+id/statut" android:layout_width="0dp"
+                android:layout_height="48dp" android:layout_weight="1.25"
+                android:entries="@array/statut_options"
+                android:background="@drawable/control_field"
+                android:paddingStart="10dp" android:paddingEnd="10dp"/>
+        </LinearLayout>
         <com.example.bulletinagreage.BulletinPageLayout
             android:id="@+id/bulletinPage" android:layout_width="match_parent"
             android:layout_height="wrap_content" android:elevation="2dp" />
