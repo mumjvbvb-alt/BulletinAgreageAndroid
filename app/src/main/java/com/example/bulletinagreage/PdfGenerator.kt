@@ -20,7 +20,11 @@ data class BulletinData(
     val quantite:String,val numeroBon:String,val carteIdentite:String,val poids:String,val humidite:String,
     val ergot:String,val tamis:String,val debris:String,val grainesNuisibles:String,val impur1Total:String,
     val casses:String,val boutes:String,val roux:String,val mouchetes:String,val punaises:String,val piques:String,
-    val impur2Total:String,val mitadin:String,val bleTendre:String,val mitadinTotal:String
+    val impur2Total:String,val mitadin:String,val bleTendre:String,val mitadinTotal:String,
+    val decisionRefused:Boolean = false,
+    val stickers: BulletinPageLayout.StickerConfig = BulletinPageLayout.StickerConfig(
+        690f, 548f, 1f, 690f, 650f, 1f
+    )
 )
 
 object PdfGenerator {
@@ -30,6 +34,8 @@ object PdfGenerator {
             val page = doc.startPage(PdfDocument.PageInfo.Builder(595, 846, 1).create())
             val editor = BulletinPageLayout(activity)
             editor.populate(d)
+            editor.setDecision(d.decisionRefused)
+            editor.applyStickerConfig(d.stickers)
             val imp1 = d.impur1Total.replace(',', '.').toDoubleOrNull() ?: 0.0
             val imp2 = d.impur2Total.replace(',', '.').toDoubleOrNull() ?: 0.0
             val mit = d.mitadinTotal.replace(',', '.').toDoubleOrNull() ?: 0.0
