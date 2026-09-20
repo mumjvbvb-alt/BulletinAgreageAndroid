@@ -27,7 +27,7 @@ class MainActivity : Activity() {
         val boutes = value(R.id.grainsBoutes) ?: 0.0
         val impuretes2 = casses + boutes +
                 (value(R.id.grainsRoux) ?: 0.0) +
-                (value(R.id.grainsMouchetés) ?: 0.0) +
+                (value(R.id.grainsMouchetes) ?: 0.0) +
                 (value(R.id.grainsPunaises) ?: 0.0) +
                 (value(R.id.grainsPiques) ?: 0.0)
 
