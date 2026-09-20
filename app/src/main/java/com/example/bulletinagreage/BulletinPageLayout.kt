@@ -121,7 +121,7 @@ class BulletinPageLayout @JvmOverloads constructor(
     }
 
     override fun onMeasure(widthMeasureSpec: Int, heightMeasureSpec: Int) {
-        val width = MeasureSpec.getSize(widthMeasure)
+        val width = resources.displayMetrics.widthPixels
         val height = (width * DESIGN_H / DESIGN_W).roundToInt()
         setMeasuredDimension(width, height)
         page.measure(android.view.View.MeasureSpec.makeMeasureSpec(width, android.view.View.MeasureSpec.EXACTLY),
