@@ -12,6 +12,7 @@ class MainActivity : Activity() {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
         findViewById<Button>(R.id.calculer).setOnClickListener { calculer() }
+        findViewById<Button>(R.id.genererPdf).setOnClickListener { PdfGenerator.generateAndOpen(this, collectForm(), calculer()) }
     }
 
     private fun calculer() {
