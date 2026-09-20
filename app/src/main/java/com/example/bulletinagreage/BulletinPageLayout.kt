@@ -59,6 +59,7 @@ class BulletinPageLayout @JvmOverloads constructor(
     private var bonus = ""
     private var refaction = ""
     private var observation = ""
+    private var rowAdjustments: Map<String, RowAdjustment> = emptyMap()
     private val page = PageCanvas(context)
 
     init {
@@ -96,6 +97,7 @@ class BulletinPageLayout @JvmOverloads constructor(
         bonus = String.format(Locale.FRANCE, "%.3f", result.bonification)
         refaction = String.format(Locale.FRANCE, "%.3f", result.refaction)
         observation = result.notes.firstOrNull() ?: ""
+        rowAdjustments = result.rows
         field(R.id.impur1Total).setText(String.format(Locale.FRANCE, "%.3f", imp1))
         field(R.id.impur2Total).setText(String.format(Locale.FRANCE, "%.3f", imp2))
         field(R.id.mitadinTotal).setText(String.format(Locale.FRANCE, "%.3f", mitadin))
@@ -182,15 +184,9 @@ class BulletinPageLayout @JvmOverloads constructor(
             c.drawRect(l, t, r, b, thin)
 
         private fun drawLogo(c: Canvas, cx: Float, cy: Float) {
-            p.style = Paint.Style.STROKE; p.strokeWidth = 5f
-            c.drawOval(cx - 38f, cy + 25f, cx + 38f, cy + 55f, p)
-            c.drawLine(cx, cy + 28f, cx, cy - 32f, p)
-            for (i in -3..3) {
-                val yy = cy - i * 10f
-                c.drawOval(cx - 28f, yy - 6f, cx - 3f, yy + 2f, p)
-                c.drawOval(cx + 3f, yy - 6f, cx + 28f, yy + 2f, p)
-            }
-            p.style = Paint.Style.FILL
+            val bmp = CompanyLogo.bitmap() ?: return
+            val dst = android.graphics.RectF(cx - 48f, cy - 48f, cx + 48f, cy + 48f)
+            c.drawBitmap(bmp, null, dst, null)
         }
 
         private fun dotted(c: Canvas, x1: Float, y: Float, x2: Float) {
@@ -265,9 +261,15 @@ class BulletinPageLayout @JvmOverloads constructor(
             if (bonus.isNotEmpty() || refaction.isNotEmpty()) centered(c,observation.take(16),x5,1603f,x6-x5,13f)
         }
 
-        private fun row(c:Canvas, top:Float, bottom:Float, label:String, limit:String) {
-            txt(c,label,145f,(top+bottom)/2f+7f,19f,Paint.Align.LEFT,bold)
-            centered(c,limit,530f,(top+bottom)/2f+7f,123f,20f,bold)
+        private fun row(c:Canvas, top:Float, bottom:Float, label:String, limit:String, key:String?) {
+            val cy=(top+bottom)/2f+7f
+            txt(c,label,145f,cy,19f,Paint.Align.LEFT,bold)
+            centered(c,limit,530f,cy,123f,20f,bold)
+            key?.let {
+                val a=rowAdjustments[it] ?: return@let
+                if (a.bonification != 0.0) centered(c,String.format(Locale.FRANCE,"%.3f",a.bonification),760f,cy,167f,18f,bold)
+                if (a.refaction != 0.0) centered(c,String.format(Locale.FRANCE,"%.3f",a.refaction),927f,cy,136f,18f,bold)
+            }
         }
 
         private fun multiline(c:Canvas,text:String,x:Float,y:Float,size:Float,typeface:Typeface) {
