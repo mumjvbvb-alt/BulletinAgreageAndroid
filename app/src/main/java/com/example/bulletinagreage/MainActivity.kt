@@ -75,7 +75,9 @@ class MainActivity : Activity() {
         text(R.id.impur1Total), text(R.id.grainsCasses), text(R.id.grainsBoutes),
         text(R.id.grainsRoux), text(R.id.grainsMouchetes), text(R.id.grainsPunaises),
         text(R.id.grainsPiques), text(R.id.impur2Total), text(R.id.mitadin),
-        text(R.id.bleTendre), text(R.id.mitadinTotal)
+        text(R.id.bleTendre), text(R.id.mitadinTotal),
+        statut.selectedItemPosition == 2,
+        page.getStickerConfig()
     )
 
     private fun text(id: Int) = findViewById<EditText>(id).text.toString().trim()
