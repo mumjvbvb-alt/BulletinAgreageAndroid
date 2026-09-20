@@ -20,6 +20,8 @@
         <EditText android:id="@+id/agreur" android:layout_width="match_parent" android:layout_height="wrap_content" android:hint="Nom de l’agréeur" android:inputType="textCapWords" />
         <EditText android:id="@+id/date" android:layout_width="match_parent" android:layout_height="wrap_content" android:hint="Date" />
         <EditText android:id="@+id/quantite" android:layout_width="match_parent" android:layout_height="wrap_content" android:hint="Quantité" />
+        <EditText android:id="@+id/carteIdentite" android:layout_width="match_parent" android:layout_height="wrap_content" android:hint="N° de la carte d’identité" />
+        <EditText android:id="@+id/differencePrix" android:layout_width="match_parent" android:layout_height="wrap_content" android:hint="Différence prix blé dur / blé tendre (DA/q), si nécessaire" android:inputType="numberDecimal" />
         <EditText android:id="@+id/numeroBon" android:layout_width="match_parent" android:layout_height="wrap_content" android:hint="N° Bon d’entrée" />
 
         <TextView android:layout_width="match_parent" android:layout_height="wrap_content"
@@ -54,6 +56,7 @@
 
         <Button android:id="@+id/calculer" android:layout_width="match_parent" android:layout_height="wrap_content"
             android:text="CALCULER BONIFICATION / RÉFACTION" android:layout_marginTop="20dp" />
+        <Button android:id="@+id/genererPdf" android:layout_width="match_parent" android:layout_height="wrap_content" android:text="GÉNÉRER LE BULLETIN PDF" android:layout_marginTop="8dp" />
         <TextView android:id="@+id/resultat" android:layout_width="match_parent" android:layout_height="wrap_content"
             android:textSize="16sp" android:paddingTop="16dp" android:paddingBottom="24dp" />
     </LinearLayout>
