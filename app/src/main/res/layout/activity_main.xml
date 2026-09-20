@@ -41,7 +41,7 @@
         <EditText android:id="@+id/grainsCasses" android:layout_width="match_parent" android:layout_height="wrap_content" android:hint="Grains cassés (%)" android:inputType="numberDecimal" />
         <EditText android:id="@+id/grainsBoutes" android:layout_width="match_parent" android:layout_height="wrap_content" android:hint="Grains fortement boutés (%)" android:inputType="numberDecimal" />
         <EditText android:id="@+id/grainsRoux" android:layout_width="match_parent" android:layout_height="wrap_content" android:hint="Grains roux (%)" android:inputType="numberDecimal" />
-        <EditText android:id="@+id/grainsMouchetés" android:layout_width="match_parent" android:layout_height="wrap_content" android:hint="Grains fortement mouchetés (%)" android:inputType="numberDecimal" />
+        <EditText android:id="@+id/grainsMouchetes" android:layout_width="match_parent" android:layout_height="wrap_content" android:hint="Grains fortement mouchetés (%)" android:inputType="numberDecimal" />
         <EditText android:id="@+id/grainsPunaises" android:layout_width="match_parent" android:layout_height="wrap_content" android:hint="Grains punaisés (%)" android:inputType="numberDecimal" />
         <EditText android:id="@+id/grainsPiques" android:layout_width="match_parent" android:layout_height="wrap_content" android:hint="Grains piqués (%)" android:inputType="numberDecimal" />
         <EditText android:id="@+id/impur2Total" android:layout_width="match_parent" android:layout_height="wrap_content" android:hint="Total 2ème catégorie (%) — calculé" android:inputType="numberDecimal" android:enabled="false" />
