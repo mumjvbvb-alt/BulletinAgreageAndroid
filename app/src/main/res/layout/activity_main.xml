@@ -1,115 +1,35 @@
 <?xml version="1.0" encoding="utf-8"?>
 <ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_width="match_parent" android:layout_height="match_parent"
-    android:background="#EEEEEE">
+    android:fillViewport="true" android:background="#E9E9E9">
     <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content"
-        android:orientation="vertical" android:padding="8dp" android:background="#EEEEEE">
-
+        android:orientation="vertical" android:padding="8dp">
+        <com.example.bulletinagreage.BulletinPageLayout
+            android:id="@+id/bulletinPage" android:layout_width="match_parent"
+            android:layout_height="wrap_content" android:elevation="2dp" />
         <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content"
-            android:orientation="vertical" android:background="#FFFFFF" android:padding="10dp">
-            <TextView android:layout_width="match_parent" android:layout_height="wrap_content"
-                android:text="OFFICE ALGERIEN INTERPROFESSIONNEL DES CEREALES"
-                android:textSize="15sp" android:textStyle="bold" android:gravity="center"/>
-            <TextView android:layout_width="match_parent" android:layout_height="wrap_content"
-                android:text="Coopérative de Céréales et des Légumes Secs de BATNA"
-                android:textSize="12sp" android:gravity="center" android:paddingTop="3dp"/>
-            <TextView android:layout_width="match_parent" android:layout_height="wrap_content"
-                android:text="BULLETIN D'AGREAGE" android:textSize="20sp"
-                android:textStyle="bold" android:gravity="center" android:paddingTop="8dp"/>
-            <TextView android:layout_width="match_parent" android:layout_height="wrap_content"
-                android:text="Espèce : Blé Dur" android:textSize="13sp" android:textStyle="bold"
-                android:gravity="center" android:paddingBottom="8dp"/>
-
-            <TableLayout android:layout_width="match_parent" android:layout_height="wrap_content"
-                android:stretchColumns="1,3" android:shrinkColumns="1,3">
-                <TableRow>
-                    <TextView style="@style/BulletinLabel" android:text="Date"/>
-                    <EditText android:id="@+id/date" style="@style/BulletinInput" android:hint="Date"/>
-                    <TextView style="@style/BulletinLabel" android:text="N° Bon d'entrée"/>
-                    <EditText android:id="@+id/numeroBon" style="@style/BulletinInput" android:hint="N°"/>
-                </TableRow>
-                <TableRow>
-                    <TextView style="@style/BulletinLabel" android:text="Nom du producteur"/>
-                    <EditText android:id="@+id/producteur" style="@style/BulletinInput" android:hint="Nom"/>
-                    <TextView style="@style/BulletinLabel" android:text="Quantité"/>
-                    <EditText android:id="@+id/quantite" style="@style/BulletinInput" android:hint="Quantité"/>
-                </TableRow>
-                <TableRow>
-                    <TextView style="@style/BulletinLabel" android:text="Adresse"/>
-                    <EditText android:id="@+id/adresse" style="@style/BulletinInput" android:hint="Adresse"/>
-                    <TextView style="@style/BulletinLabel" android:text="Point de collecte"/>
-                    <EditText android:id="@+id/pointCollecte" style="@style/BulletinInput" android:hint="Point"/>
-                </TableRow>
-                <TableRow>
-                    <TextView style="@style/BulletinLabel" android:text="Nom de l'agréeur"/>
-                    <EditText android:id="@+id/agreur" style="@style/BulletinInput" android:hint="Agréeur"/>
-                    <TextView style="@style/BulletinLabel" android:text="N° carte d'identité"/>
-                    <EditText android:id="@+id/carteIdentite" style="@style/BulletinInput" android:hint="N°"/>
-                </TableRow>
-            </TableLayout>
-        </LinearLayout>
-
-        <HorizontalScrollView android:layout_width="match_parent" android:layout_height="wrap_content"
-            android:fillViewport="false" android:layout_marginTop="6dp">
-            <TableLayout android:layout_width="760dp" android:layout_height="wrap_content"
-                android:stretchColumns="1,2,3,4,5" android:background="#FFFFFF">
-
-                <TableRow android:background="#D9D9D9">
-                    <TextView style="@style/BulletinHead" android:text="Paramètres"/>
-                    <TextView style="@style/BulletinHead" android:text="Limites (sans bonification ni réfaction)"/>
-                    <TextView style="@style/BulletinHead" android:text="Valeurs"/>
-                    <TextView style="@style/BulletinHead" android:text="Bonification (D.A.)"/>
-                    <TextView style="@style/BulletinHead" android:text="Réfaction (D.A.)"/>
-                    <TextView style="@style/BulletinHead" android:text="Observation"/>
-                </TableRow>
-
-                <TableRow><TextView style="@style/BulletinSection" android:text="Poids spécifique (kg/hl)"/><TextView style="@style/BulletinLimit" android:text="[76 - 80]"/><EditText android:id="@+id/poidsSpecifique" style="@style/BulletinValue" android:hint=""/><TextView style="@style/BulletinCalc" android:text=""/><TextView style="@style/BulletinCalc" android:text=""/><TextView style="@style/BulletinObs" android:text=""/></TableRow>
-                <TableRow><TextView style="@style/BulletinCell" android:text="Teneur en eau (%)"/><TextView style="@style/BulletinLimit" android:text="≤ 17"/><EditText android:id="@+id/humidite" style="@style/BulletinValue"/><TextView style="@style/BulletinCalc" android:text=""/><TextView style="@style/BulletinCalc" android:text=""/><TextView style="@style/BulletinObs" android:text=""/></TableRow>
-                <TableRow><TextView style="@style/BulletinCell" android:text="Ergot (‰)"/><TextView style="@style/BulletinLimit" android:text="≤ 1"/><EditText android:id="@+id/ergot" style="@style/BulletinValue"/><TextView style="@style/BulletinCalc" android:text=""/><TextView style="@style/BulletinCalc" android:text=""/><TextView style="@style/BulletinObs" android:text=""/></TableRow>
-
-                <TableRow android:background="#E6E6E6"><TextView style="@style/BulletinGroup" android:text="IMPURETES 1ère CATEGORIE"/><TextView style="@style/BulletinGroup" android:text=""/><TextView style="@style/BulletinGroup" android:text=""/><TextView style="@style/BulletinGroup" android:text=""/><TextView style="@style/BulletinGroup" android:text=""/><TextView style="@style/BulletinGroup" android:text=""/></TableRow>
-                <TableRow><TextView style="@style/BulletinCell" android:text="Matières passant au tamis 20 × 2,1 mm (%)"/><TextView style="@style/BulletinLimit" android:text="-"/><EditText android:id="@+id/tamis" style="@style/BulletinValue"/><TextView style="@style/BulletinCalc" android:text=""/><TextView style="@style/BulletinCalc" android:text=""/><TextView style="@style/BulletinObs" android:text=""/></TableRow>
-                <TableRow><TextView style="@style/BulletinCell" android:text="Débris végétaux et éléments minéraux retenus par le tamis (%)"/><TextView style="@style/BulletinLimit" android:text="-"/><EditText android:id="@+id/debris" style="@style/BulletinValue"/><TextView style="@style/BulletinCalc" android:text=""/><TextView style="@style/BulletinCalc" android:text=""/><TextView style="@style/BulletinObs" android:text=""/></TableRow>
-                <TableRow><TextView style="@style/BulletinCell" android:text="Graines nuisibles (%)"/><TextView style="@style/BulletinLimit" android:text="≤ 0,25"/><EditText android:id="@+id/grainesNuisibles" style="@style/BulletinValue"/><TextView style="@style/BulletinCalc" android:text=""/><TextView style="@style/BulletinCalc" android:text=""/><TextView style="@style/BulletinObs" android:text=""/></TableRow>
-                <TableRow><TextView style="@style/BulletinCell" android:text="Total (%)"/><TextView style="@style/BulletinLimit" android:text="[1 - 3]"/><EditText android:id="@+id/impur1Total" style="@style/BulletinValue" android:enabled="false"/><TextView style="@style/BulletinCalc" android:text=""/><TextView style="@style/BulletinCalc" android:text=""/><TextView style="@style/BulletinObs" android:text=""/></TableRow>
-
-                <TableRow android:background="#E6E6E6"><TextView style="@style/BulletinGroup" android:text="IMPURETES 2ème CATEGORIE"/><TextView style="@style/BulletinGroup"/><TextView style="@style/BulletinGroup"/><TextView style="@style/BulletinGroup"/><TextView style="@style/BulletinGroup"/><TextView style="@style/BulletinGroup"/></TableRow>
-                <TableRow><TextView style="@style/BulletinCell" android:text="Grains cassés (%)"/><TextView style="@style/BulletinLimit" android:text="≤ 5"/><EditText android:id="@+id/grainsCasses" style="@style/BulletinValue"/><TextView style="@style/BulletinCalc"/><TextView style="@style/BulletinCalc"/><TextView style="@style/BulletinObs"/></TableRow>
-                <TableRow><TextView style="@style/BulletinCell" android:text="Grains fortement boutés (%)"/><TextView style="@style/BulletinLimit" android:text="≤ 5"/><EditText android:id="@+id/grainsBoutes" style="@style/BulletinValue"/><TextView style="@style/BulletinCalc"/><TextView style="@style/BulletinCalc"/><TextView style="@style/BulletinObs"/></TableRow>
-                <TableRow><TextView style="@style/BulletinCell" android:text="Grains roux (%)"/><TextView style="@style/BulletinLimit" android:text="-"/><EditText android:id="@+id/grainsRoux" style="@style/BulletinValue"/><TextView style="@style/BulletinCalc"/><TextView style="@style/BulletinCalc"/><TextView style="@style/BulletinObs"/></TableRow>
-                <TableRow><TextView style="@style/BulletinCell" android:text="Grains fortement mouchetés (%)"/><TextView style="@style/BulletinLimit" android:text="-"/><EditText android:id="@+id/grainsMouchetes" style="@style/BulletinValue"/><TextView style="@style/BulletinCalc"/><TextView style="@style/BulletinCalc"/><TextView style="@style/BulletinObs"/></TableRow>
-                <TableRow><TextView style="@style/BulletinCell" android:text="Grains punaisés (%)"/><TextView style="@style/BulletinLimit" android:text="-"/><EditText android:id="@+id/grainsPunaises" style="@style/BulletinValue"/><TextView style="@style/BulletinCalc"/><TextView style="@style/BulletinCalc"/><TextView style="@style/BulletinObs"/></TableRow>
-                <TableRow><TextView style="@style/BulletinCell" android:text="Grains piqués (%)"/><TextView style="@style/BulletinLimit" android:text="-"/><EditText android:id="@+id/grainsPiques" style="@style/BulletinValue"/><TextView style="@style/BulletinCalc"/><TextView style="@style/BulletinCalc"/><TextView style="@style/BulletinObs"/></TableRow>
-                <TableRow><TextView style="@style/BulletinCell" android:text="Total (%)"/><TextView style="@style/BulletinLimit" android:text="≤ 10"/><EditText android:id="@+id/impur2Total" style="@style/BulletinValue" android:enabled="false"/><TextView style="@style/BulletinCalc"/><TextView style="@style/BulletinCalc"/><TextView style="@style/BulletinObs"/></TableRow>
-
-                <TableRow android:background="#E6E6E6"><TextView style="@style/BulletinGroup" android:text="GRAINS MITADINES"/><TextView style="@style/BulletinGroup"/><TextView style="@style/BulletinGroup"/><TextView style="@style/BulletinGroup"/><TextView style="@style/BulletinGroup"/><TextView style="@style/BulletinGroup"/></TableRow>
-                <TableRow><TextView style="@style/BulletinCell" android:text="Grains mitadinés (%)"/><TextView style="@style/BulletinLimit" android:text="-"/><EditText android:id="@+id/mitadin" style="@style/BulletinValue"/><TextView style="@style/BulletinCalc"/><TextView style="@style/BulletinCalc"/><TextView style="@style/BulletinObs"/></TableRow>
-                <TableRow><TextView style="@style/BulletinCell" android:text="Blé tendre dans blé dur (%)"/><TextView style="@style/BulletinLimit" android:text="≤ 5"/><EditText android:id="@+id/bleTendre" style="@style/BulletinValue"/><TextView style="@style/BulletinCalc"/><TextView style="@style/BulletinCalc"/><TextView style="@style/BulletinObs"/></TableRow>
-                <TableRow><TextView style="@style/BulletinCell" android:text="Total (%)"/><TextView style="@style/BulletinLimit" android:text="[10 - 20]"/><EditText android:id="@+id/mitadinTotal" style="@style/BulletinValue" android:enabled="false"/><TextView style="@style/BulletinCalc"/><TextView style="@style/BulletinCalc"/><TextView style="@style/BulletinObs"/></TableRow>
-                <TableRow android:background="#F0F0F0"><TextView style="@style/BulletinGroup" android:text="TOTAL DES BONIFICATIONS ET REFACTIONS"/><TextView style="@style/BulletinGroup"/><TextView style="@style/BulletinGroup"/><TextView style="@style/BulletinGroup"/><TextView style="@style/BulletinGroup"/><TextView style="@style/BulletinGroup"/></TableRow>
-            </TableLayout>
-        </HorizontalScrollView>
-
-        <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content"
-            android:orientation="vertical" android:background="#FFFFFF" android:padding="10dp" android:layout_marginTop="6dp">
-            <EditText android:id="@+id/differencePrix" android:layout_width="match_parent" android:layout_height="wrap_content"
-                android:hint="Différence prix blé dur / blé tendre (DA/q), si nécessaire"
-                android:inputType="numberDecimal"/>
-            <Button android:id="@+id/calculer" android:layout_width="match_parent" android:layout_height="wrap_content"
-                android:text="CALCULER BONIFICATION / RÉFACTION" android:layout_marginTop="8dp"/>
-            <Button android:id="@+id/genererPdf" android:layout_width="match_parent" android:layout_height="wrap_content"
-                android:text="GÉNÉRER LE BULLETIN PDF"/>
-            <TextView android:id="@+id/resultat" android:layout_width="match_parent" android:layout_height="wrap_content"
-                android:textSize="15sp" android:paddingTop="10dp" android:paddingBottom="8dp"/>
-            <TextView android:layout_width="match_parent" android:layout_height="wrap_content"
-                android:text="Référence : Décret n°88-152 du 26 juillet 1988"
-                android:textSize="10sp" android:gravity="center"/>
-            <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content"
-                android:orientation="horizontal" android:gravity="center" android:paddingTop="12dp">
-                <TextView android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1" android:text="Producteur" android:gravity="center"/>
-                <TextView android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1" android:text="N° carte d'identité" android:gravity="center"/>
-                <TextView android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1" android:text="Agréeur" android:gravity="center"/>
+            android:orientation="vertical" android:padding="10dp" android:layout_marginTop="8dp"
+            android:background="#FFFFFF">
+            <EditText android:id="@+id/differencePrix" android:layout_width="match_parent"
+                android:layout_height="46dp" android:hint="Différence prix blé dur / blé tendre (DA/q), si nécessaire"
+                android:inputType="numberDecimal" android:paddingStart="12dp" android:paddingEnd="12dp"
+                android:textSize="14sp" android:background="@drawable/control_field" />
+            <LinearLayout android:layout_width="match_parent" android:layout_height="52dp"
+                android:orientation="horizontal" android:layout_marginTop="8dp">
+                <Button android:id="@+id/calculer" android:layout_width="0dp" android:layout_height="match_parent"
+                    android:layout_weight="1" android:text="CALCULER" android:textStyle="bold"
+                    android:textSize="13sp" android:background="@drawable/control_button" />
+                <Space android:layout_width="8dp" android:layout_height="1dp" />
+                <Button android:id="@+id/genererPdf" android:layout_width="0dp" android:layout_height="match_parent"
+                    android:layout_weight="1" android:text="GÉNÉRER PDF" android:textStyle="bold"
+                    android:textSize="13sp" android:background="@drawable/control_button" />
             </LinearLayout>
+            <TextView android:id="@+id/resultat" android:layout_width="match_parent"
+                android:layout_height="wrap_content" android:layout_marginTop="10dp" android:padding="12dp"
+                android:textSize="13sp" android:textColor="#111111" android:background="#F7F7F7" />
+            <TextView android:layout_width="match_parent" android:layout_height="wrap_content"
+                android:layout_marginTop="8dp" android:text="Décret n°88-152 du 26 juillet 1988"
+                android:textSize="10sp" android:textColor="#555555" android:gravity="center" />
         </LinearLayout>
     </LinearLayout>
 </ScrollView>
