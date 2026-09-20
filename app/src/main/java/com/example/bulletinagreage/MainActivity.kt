@@ -5,15 +5,27 @@ import android.os.Bundle
 import android.widget.Button
 import android.widget.EditText
 import android.widget.TextView
+import android.widget.Spinner
 import java.util.Locale
 
 class MainActivity : Activity() {
     private lateinit var page: BulletinPageLayout
+    private lateinit var statut: Spinner
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
         page = findViewById(R.id.bulletinPage)
+        statut = findViewById(R.id.statut)
+        statut.setSelection(0)
+        statut.setOnItemSelectedListener(object : android.widget.AdapterView.OnItemSelectedListener {
+            override fun onItemSelected(parent: android.widget.AdapterView<*>?, view: android.view.View?, position: Int, id: Long) {
+                page.setDecision(position == 2)
+            }
+            override fun onNothingSelected(parent: android.widget.AdapterView<*>?) {
+                page.setDecision(false)
+            }
+        })
         findViewById<Button>(R.id.calculer).setOnClickListener { calculer() }
         findViewById<Button>(R.id.genererPdf).setOnClickListener {
             val result = calculer()
@@ -68,5 +80,5 @@ class MainActivity : Activity() {
 
     private fun text(id: Int) = findViewById<EditText>(id).text.toString().trim()
     private fun value(id: Int) = text(id).replace(',', '.').toDoubleOrNull()
-    private fun format(v: Double) = String.format(Locale.FRANCE, "%.3f", v)
+    private fun format(v: Double) = String.format(Locale.FRANCE, "%.2f", v)
 }
