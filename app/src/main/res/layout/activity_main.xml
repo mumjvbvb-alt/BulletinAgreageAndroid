@@ -1,0 +1,86 @@
+<?xml version="1.0" encoding="utf-8"?>
+<ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="#F7F7F7">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:padding="16dp">
+
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Bulletin d’Agréage"
+            android:textSize="25sp"
+            android:textStyle="bold"
+            android:gravity="center" />
+
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Blé Dur — Saisie des résultats d’analyse"
+            android:textSize="18sp"
+            android:gravity="center"
+            android:paddingBottom="20dp" />
+
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Informations du lot"
+            android:textSize="19sp"
+            android:textStyle="bold"
+            android:paddingBottom="8dp" />
+
+        <EditText android:id="@+id/producteur" android:layout_width="match_parent" android:layout_height="wrap_content" android:hint="Nom du producteur" android:inputType="textCapWords" />
+        <EditText android:id="@+id/adresse" android:layout_width="match_parent" android:layout_height="wrap_content" android:hint="Adresse" android:inputType="text" />
+        <EditText android:id="@+id/pointCollecte" android:layout_width="match_parent" android:layout_height="wrap_content" android:hint="Point de collecte" android:inputType="text" />
+        <EditText android:id="@+id/agreur" android:layout_width="match_parent" android:layout_height="wrap_content" android:hint="Nom de l’agréeur" android:inputType="textCapWords" />
+        <EditText android:id="@+id/date" android:layout_width="match_parent" android:layout_height="wrap_content" android:hint="Date" android:inputType="text" />
+        <EditText android:id="@+id/quantite" android:layout_width="match_parent" android:layout_height="wrap_content" android:hint="Quantité" android:inputType="text" />
+        <EditText android:id="@+id/numeroBon" android:layout_width="match_parent" android:layout_height="wrap_content" android:hint="N° Bon d’entrée" android:inputType="text" />
+
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Résultats de l’analyse"
+            android:textSize="19sp"
+            android:textStyle="bold"
+            android:paddingTop="18dp"
+            android:paddingBottom="8dp" />
+
+        <EditText android:id="@+id/poidsSpecifique" android:layout_width="match_parent" android:layout_height="wrap_content" android:hint="Poids spécifique (kg/hl)" android:inputType="numberDecimal" />
+        <EditText android:id="@+id/humidite" android:layout_width="match_parent" android:layout_height="wrap_content" android:hint="Teneur en eau (%)" android:inputType="numberDecimal" />
+        <EditText android:id="@+id/ergot" android:layout_width="match_parent" android:layout_height="wrap_content" android:hint="Ergot (‰)" android:inputType="numberDecimal" />
+        <EditText android:id="@+id/tamis" android:layout_width="match_parent" android:layout_height="wrap_content" android:hint="Matières passant au tamis 20 × 2,1 mm (%)" android:inputType="numberDecimal" />
+        <EditText android:id="@+id/debris" android:layout_width="match_parent" android:layout_height="wrap_content" android:hint="Débris végétaux / éléments minéraux (%)" android:inputType="numberDecimal" />
+        <EditText android:id="@+id/grainesNuisibles" android:layout_width="match_parent" android:layout_height="wrap_content" android:hint="Graines nuisibles (%)" android:inputType="numberDecimal" />
+        <EditText android:id="@+id/impur1Total" android:layout_width="match_parent" android:layout_height="wrap_content" android:hint="Total impuretés 1ère catégorie (%)" android:inputType="numberDecimal" />
+        <EditText android:id="@+id/grainsCasses" android:layout_width="match_parent" android:layout_height="wrap_content" android:hint="Grains cassés (%)" android:inputType="numberDecimal" />
+        <EditText android:id="@+id/grainsBoutes" android:layout_width="match_parent" android:layout_height="wrap_content" android:hint="Grains fortement boutés (%)" android:inputType="numberDecimal" />
+        <EditText android:id="@+id/grainsRoux" android:layout_width="match_parent" android:layout_height="wrap_content" android:hint="Grains roux (%)" android:inputType="numberDecimal" />
+        <EditText android:id="@+id/grainsMouchetés" android:layout_width="match_parent" android:layout_height="wrap_content" android:hint="Grains fortement mouchetés (%)" android:inputType="numberDecimal" />
+        <EditText android:id="@+id/grainsPunaises" android:layout_width="match_parent" android:layout_height="wrap_content" android:hint="Grains punaisés (%)" android:inputType="numberDecimal" />
+        <EditText android:id="@+id/grainsPiques" android:layout_width="match_parent" android:layout_height="wrap_content" android:hint="Grains piqués (%)" android:inputType="numberDecimal" />
+        <EditText android:id="@+id/impur2Total" android:layout_width="match_parent" android:layout_height="wrap_content" android:hint="Total impuretés 2ème catégorie (%)" android:inputType="numberDecimal" />
+        <EditText android:id="@+id/mitadin" android:layout_width="match_parent" android:layout_height="wrap_content" android:hint="Grains mitadinés (%)" android:inputType="numberDecimal" />
+        <EditText android:id="@+id/bleTendre" android:layout_width="match_parent" android:layout_height="wrap_content" android:hint="Blé tendre dans blé dur (%)" android:inputType="numberDecimal" />
+        <EditText android:id="@+id/mitadinTotal" android:layout_width="match_parent" android:layout_height="wrap_content" android:hint="Total grains mitadinés (%)" android:inputType="numberDecimal" />
+
+        <Button
+            android:id="@+id/calculer"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Calculer"
+            android:layout_marginTop="20dp" />
+
+        <TextView
+            android:id="@+id/resultat"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:textSize="16sp"
+            android:paddingTop="12dp" />
+    </LinearLayout>
+</ScrollView>
