@@ -124,12 +124,12 @@ class BulletinPageLayout @JvmOverloads constructor(
         val width = MeasureSpec.getSize(widthMeasure)
         val height = (width * DESIGN_H / DESIGN_W).roundToInt()
         setMeasuredDimension(width, height)
-        page.measure(MeasureSpec.makeMeasureSpec(width, MeasureSpec.EXACTLY),
-            MeasureSpec.makeMeasureSpec(height, MeasureSpec.EXACTLY))
+        page.measure(android.view.View.MeasureSpec.makeMeasureSpec(width, android.view.View.MeasureSpec.EXACTLY),
+            android.view.View.MeasureSpec.makeMeasureSpec(height, android.view.View.MeasureSpec.EXACTLY))
         specs.forEach { s ->
             fields[s.id]?.measure(
-                MeasureSpec.makeMeasureSpec((s.w * width / DESIGN_W).roundToInt(), MeasureSpec.EXACTLY),
-                MeasureSpec.makeMeasureSpec((s.h * width / DESIGN_W).roundToInt(), MeasureSpec.EXACTLY)
+                android.view.View.MeasureSpec.makeMeasureSpec((s.w * width / DESIGN_W).roundToInt(), android.view.View.MeasureSpec.EXACTLY),
+                android.view.View.MeasureSpec.makeMeasureSpec((s.h * width / DESIGN_W).roundToInt(), android.view.View.MeasureSpec.EXACTLY)
             )
         }
     }
