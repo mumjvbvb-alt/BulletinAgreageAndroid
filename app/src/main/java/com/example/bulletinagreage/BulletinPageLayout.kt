@@ -8,6 +8,8 @@ import android.graphics.Typeface
 import android.text.InputType
 import android.util.AttributeSet
 import android.view.Gravity
+import android.view.MotionEvent
+import android.view.ScaleGestureDetector
 import android.widget.EditText
 import android.widget.FrameLayout
 import kotlin.math.roundToInt
@@ -36,23 +38,23 @@ class BulletinPageLayout @JvmOverloads constructor(
         Spec(R.id.quantite, 705f, 402f, 300f, 38f),
         Spec(R.id.numeroBon, 705f, 438f, 335f, 38f),
         Spec(R.id.carteIdentite, 110f, 1778f, 360f, 40f),
-        Spec(R.id.poidsSpecifique, 655f, 640f, 105f, 30f, true),
-        Spec(R.id.humidite, 655f, 674f, 105f, 32f, true),
-        Spec(R.id.ergot, 655f, 708f, 105f, 32f, true),
-        Spec(R.id.tamis, 655f, 750f, 105f, 95f, true),
-        Spec(R.id.debris, 655f, 855f, 105f, 80f, true),
-        Spec(R.id.grainesNuisibles, 655f, 941f, 105f, 60f, true),
-        Spec(R.id.impur1Total, 655f, 1008f, 105f, 34f, true, true),
-        Spec(R.id.grainsCasses, 655f, 1087f, 105f, 44f, true),
-        Spec(R.id.grainsBoutes, 655f, 1138f, 105f, 44f, true),
-        Spec(R.id.grainsRoux, 655f, 1188f, 105f, 42f, true),
-        Spec(R.id.grainsMouchetes, 655f, 1238f, 105f, 66f, true),
-        Spec(R.id.grainsPunaises, 655f, 1278f, 105f, 42f, true),
-        Spec(R.id.grainsPiques, 655f, 1320f, 105f, 42f, true),
-        Spec(R.id.impur2Total, 655f, 1369f, 105f, 36f, true, true),
-        Spec(R.id.mitadin, 655f, 1420f, 105f, 45f, true),
-        Spec(R.id.bleTendre, 655f, 1473f, 105f, 50f, true),
-        Spec(R.id.mitadinTotal, 655f, 1526f, 105f, 48f, true, true)
+        Spec(R.id.poidsSpecifique, 655f, 642f, 105f, 24f, true),
+        Spec(R.id.humidite, 655f, 678f, 105f, 24f, true),
+        Spec(R.id.ergot, 655f, 719f, 105f, 26f, true),
+        Spec(R.id.tamis, 655f, 765f, 105f, 48f, true),
+        Spec(R.id.debris, 655f, 852f, 105f, 48f, true),
+        Spec(R.id.grainesNuisibles, 655f, 949f, 105f, 30f, true),
+        Spec(R.id.impur1Total, 655f, 1012f, 105f, 28f, true, true),
+        Spec(R.id.grainsCasses, 655f, 1052f, 105f, 27f, true),
+        Spec(R.id.grainsBoutes, 655f, 1096f, 105f, 30f, true),
+        Spec(R.id.grainsRoux, 655f, 1146f, 105f, 28f, true),
+        Spec(R.id.grainsMouchetes, 655f, 1195f, 105f, 30f, true),
+        Spec(R.id.grainsPunaises, 655f, 1239f, 105f, 30f, true),
+        Spec(R.id.grainsPiques, 655f, 1282f, 105f, 28f, true),
+        Spec(R.id.impur2Total, 655f, 1378f, 105f, 28f, true, true),
+        Spec(R.id.mitadin, 655f, 1429f, 105f, 30f, true),
+        Spec(R.id.bleTendre, 655f, 1479f, 105f, 28f, true),
+        Spec(R.id.mitadinTotal, 655f, 1530f, 105f, 30f, true, true)
     )
 
     private val fields = mutableMapOf<Int, EditText>()
@@ -60,13 +62,26 @@ class BulletinPageLayout @JvmOverloads constructor(
     private var refaction = ""
     private var observation = ""
     private var rowAdjustments: Map<String, RowAdjustment> = emptyMap()
+    private var currentImp1 = 0.0
+    private var currentImp2 = 0.0
+    private var refused = false
     private val page = PageCanvas(context)
+    private val priceSticker = NoticeSticker(context, false)
+    private val refusalSticker = NoticeSticker(context, true)
 
     init {
         setWillNotDraw(false)
         setBackgroundColor(Color.WHITE)
         addView(page, LayoutParams(-1, -1))
         specs.forEach { addField(it) }
+        priceSticker.designX = 690f
+        priceSticker.designY = 548f
+        refusalSticker.designX = 690f
+        refusalSticker.designY = 650f
+        priceSticker.visibility = GONE
+        refusalSticker.visibility = GONE
+        addView(priceSticker, LayoutParams(360, 100))
+        addView(refusalSticker, LayoutParams(360, 100))
     }
 
     private fun addField(s: Spec) {
@@ -94,14 +109,45 @@ class BulletinPageLayout @JvmOverloads constructor(
     fun field(id: Int): EditText = fields[id]!!
 
     fun setResult(result: CalculationResult, imp1: Double, imp2: Double, mitadin: Double) {
-        bonus = String.format(Locale.FRANCE, "%.3f", result.bonification)
-        refaction = String.format(Locale.FRANCE, "%.3f", result.refaction)
+        bonus = String.format(Locale.FRANCE, "%.2f", result.bonification)
+        refaction = String.format(Locale.FRANCE, "%.2f", result.refaction)
         observation = result.notes.firstOrNull() ?: ""
         rowAdjustments = result.rows
+        currentImp1 = imp1
+        currentImp2 = imp2
+        updateNotices()
         field(R.id.impur1Total).setText(String.format(Locale.FRANCE, "%.3f", imp1))
         field(R.id.impur2Total).setText(String.format(Locale.FRANCE, "%.3f", imp2))
         field(R.id.mitadinTotal).setText(String.format(Locale.FRANCE, "%.3f", mitadin))
         page.invalidate()
+    }
+
+    fun setDecision(isRefused: Boolean) {
+        refused = isRefused
+        updateNotices()
+    }
+
+    fun getStickerConfig(): StickerConfig = StickerConfig(
+        priceSticker.designX, priceSticker.designY, priceSticker.zoom,
+        refusalSticker.designX, refusalSticker.designY, refusalSticker.zoom
+    )
+
+    fun applyStickerConfig(config: StickerConfig) {
+        priceSticker.designX = config.priceX
+        priceSticker.designY = config.priceY
+        priceSticker.zoom = config.priceScale
+        refusalSticker.designX = config.refusalX
+        refusalSticker.designY = config.refusalY
+        refusalSticker.zoom = config.refusalScale
+        requestLayout()
+        invalidate()
+    }
+
+    private fun updateNotices() {
+        priceSticker.visibility = if (currentImp1 > 6.0 || currentImp2 > 20.0) VISIBLE else GONE
+        refusalSticker.visibility = if (refused) VISIBLE else GONE
+        requestLayout()
+        invalidate()
     }
 
     fun populate(d: BulletinData) {
@@ -144,6 +190,17 @@ class BulletinPageLayout @JvmOverloads constructor(
             val w = (s.w * scale).roundToInt(); val h = (s.h * scale).roundToInt()
             fields[s.id]?.layout(x, y, x + w, y + h)
         }
+        layoutSticker(priceSticker)
+        layoutSticker(refusalSticker)
+    }
+
+    private fun layoutSticker(sticker: NoticeSticker) {
+        val scale = measuredWidth / DESIGN_W
+        val w = (sticker.baseW * sticker.zoom * scale).roundToInt()
+        val h = (sticker.baseH * sticker.zoom * scale).roundToInt()
+        val x = (sticker.designX * scale).roundToInt()
+        val y = (sticker.designY * scale).roundToInt()
+        sticker.layout(x, y, x + w, y + h)
     }
 
     fun drawForPdf(canvas: Canvas, width: Int, height: Int) {
@@ -151,6 +208,92 @@ class BulletinPageLayout @JvmOverloads constructor(
             MeasureSpec.makeMeasureSpec(height, MeasureSpec.EXACTLY))
         layout(0, 0, width, height)
         draw(canvas)
+    }
+
+    data class StickerConfig(
+        val priceX: Float, val priceY: Float, val priceScale: Float,
+        val refusalX: Float, val refusalY: Float, val refusalScale: Float
+    )
+
+    private inner class NoticeSticker(context: Context, private val refusalNotice: Boolean) : android.view.View(context) {
+        var designX = 690f
+        var designY = 548f
+        var zoom = 1f
+        val baseW = 360f
+        val baseH = 100f
+        private var lastRawX = 0f
+        private var lastRawY = 0f
+        private val scaleDetector = ScaleGestureDetector(context, object : ScaleGestureDetector.SimpleOnScaleGestureListener() {
+            override fun onScale(detector: ScaleGestureDetector): Boolean {
+                zoom = (zoom * detector.scaleFactor).coerceIn(0.55f, 2.2f)
+                requestLayout()
+                invalidate()
+                return true
+            }
+        })
+
+        override fun onTouchEvent(event: MotionEvent): Boolean {
+            scaleDetector.onTouchEvent(event)
+            val parentScale = if (this@BulletinPageLayout.measuredWidth == 0) 1f
+                else this@BulletinPageLayout.measuredWidth / DESIGN_W
+            when (event.actionMasked) {
+                MotionEvent.ACTION_DOWN -> {
+                    lastRawX = event.rawX
+                    lastRawY = event.rawY
+                    parent.requestDisallowInterceptTouchEvent(true)
+                    return true
+                }
+                MotionEvent.ACTION_MOVE -> {
+                    if (!scaleDetector.isInProgress && event.pointerCount == 1) {
+                        designX += (event.rawX - lastRawX) / parentScale
+                        designY += (event.rawY - lastRawY) / parentScale
+                        lastRawX = event.rawX
+                        lastRawY = event.rawY
+                        requestLayout()
+                        invalidate()
+                    }
+                    return true
+                }
+                MotionEvent.ACTION_UP, MotionEvent.ACTION_CANCEL -> {
+                    parent.requestDisallowInterceptTouchEvent(false)
+                    performClick()
+                    return true
+                }
+            }
+            return true
+        }
+
+        override fun performClick(): Boolean {
+            super.performClick()
+            return true
+        }
+
+        override fun onDraw(c: Canvas) {
+            super.onDraw(c)
+            val p = Paint(Paint.ANTI_ALIAS_FLAG)
+            p.style = Paint.Style.FILL
+            p.color = if (refusalNotice) Color.rgb(255, 235, 240) else Color.rgb(255, 246, 215)
+            c.drawRoundRect(4f, 4f, width - 4f, height - 4f, 12f, 12f, p)
+            p.style = Paint.Style.STROKE
+            p.strokeWidth = 3f
+            p.color = if (refusalNotice) Color.rgb(220, 35, 55) else Color.rgb(190, 125, 15)
+            c.drawRoundRect(4f, 4f, width - 4f, height - 4f, 12f, 12f, p)
+            p.style = Paint.Style.FILL
+            p.color = if (refusalNotice) Color.rgb(205, 25, 45) else Color.rgb(120, 85, 10)
+            p.textAlign = Paint.Align.LEFT
+            p.typeface = Typeface.create("serif", Typeface.BOLD)
+            p.textSize = 18f
+            val title = if (refusalNotice) "PRODUIT REFUSÉ À CAUSE DE :" else "PRIX À DÉBATTRE À .........."
+            c.drawText(title, 18f, 31f, p)
+            p.typeface = Typeface.create("serif", Typeface.NORMAL)
+            p.textSize = 17f
+            if (refusalNotice) {
+                c.drawText("................................................", 18f, 61f, p)
+            } else {
+                c.drawText("À CAUSE DE : .................................", 18f, 61f, p)
+                c.drawText("................................................", 18f, 86f, p)
+            }
+        }
     }
 
     private inner class PageCanvas(context: Context) : android.view.View(context) {
