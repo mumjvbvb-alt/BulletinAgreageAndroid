@@ -1,12 +1,13 @@
 import sys, os, json, math, datetime
-from PySide6.QtCore import Qt, QRectF, QPoint, QSettings
+from PySide6.QtCore import Qt, QRectF, QPoint, QSettings, QRegularExpression
 from PySide6.QtGui import QPainter, QPen, QFont, QColor
 from PySide6.QtWidgets import (
     QApplication, QMainWindow, QWidget, QFrame, QLabel, QLineEdit, QComboBox,
     QPushButton, QVBoxLayout, QHBoxLayout, QFormLayout, QScrollArea,
-    QGroupBox, QFileDialog, QMessageBox, QSplitter, QTabWidget
+    QGroupBox, QFileDialog, QMessageBox, QSplitter, QTabWidget, QTextEdit
 )
 from PySide6.QtPrintSupport import QPrinter
+from PySide6.QtGui import QRegularExpressionValidator
 
 PW, PH = 794, 1123
 NAV_W, PANEL_W = 190, 360
@@ -82,12 +83,14 @@ class InvoicePage(QWidget):
         self.price=Sticker("PRIX À DÉBATTRE","PRIX À DÉBATTRE À .......... — À CAUSE DE : ................","#a76b00",self)
         self.refusal=Sticker("PRODUIT REFUSÉ À CAUSE DE","........................................................","#c51f3a",self)
         self.load_stickers()
+        self.price.show()
+        self.refusal.show()
     def load_stickers(self):
         for s,k,d in [(self.price,"price",QPoint(42,246)),(self.refusal,"refusal",QPoint(407,246))]:
             s.setGeometry(self.settings.value(k+"X",d.x(),int),self.settings.value(k+"Y",d.y(),int),
                           self.settings.value(k+"W",285,int),self.settings.value(k+"H",72,int))
             s.edit.setText(self.settings.value(k+"Text",s.edit.text()))
-        self.price.hide(); self.refusal.hide()
+        self.price.show(); self.refusal.show()
     def save_stickers(self):
         for s,k in [(self.price,"price"),(self.refusal,"refusal")]:
             for n,v in [("X",s.x()),("Y",s.y()),("W",s.width()),("H",s.height()),("Text",s.edit.text())]:
@@ -249,7 +252,7 @@ class MainWindow(QMainWindow):
         sub.setObjectName("topSub")
         l.addWidget(sub)
         l.addStretch()
-        for txt, fn in [("Imprimer", self.export_pdf), ("⋮", self.show_menu)]:
+        for txt, fn in [("Imprimer", self.export_pdf), ("Ouvrir", self.open_doc), ("⋮", self.show_menu)]:
             b = QPushButton(txt)
             b.setObjectName("topButton")
             b.clicked.connect(fn)
@@ -266,7 +269,7 @@ class MainWindow(QMainWindow):
     def editor_panel(self):
         f = QFrame()
         f.setObjectName("editorPanel")
-        f.setFixedWidth(350)
+        f.setFixedWidth(390)
         root = QVBoxLayout(f)
         root.setContentsMargins(12, 12, 12, 12)
 
@@ -297,8 +300,17 @@ class MainWindow(QMainWindow):
 
         for k, lab in [("date", "Date")] + GENERAL:
             e = QLineEdit()
+            e.setObjectName("inputField")
+            e.setClearButtonEnabled(True)
+            if k == "date":
+                e.setInputMask("00/00/0000")
+                e.setPlaceholderText("JJ/MM/AAAA")
+            elif k == "quantite":
+                e.setValidator(QRegularExpressionValidator(QRegularExpression(r"^[0-9]{0,7}([,.][0-9]{0,3})?$"), e))
+                e.setPlaceholderText("0,000")
             self.gfields[k] = e
             form.addRow(lab, e)
+            e.textChanged.connect(self.on_input_changed)
         l.addWidget(box)
 
         status = QGroupBox("Résultat de l’agréage")
@@ -313,8 +325,10 @@ class MainWindow(QMainWindow):
 
         notes = QGroupBox("Mentions")
         nl = QVBoxLayout(notes)
-        self.priceText = QLineEdit()
-        self.refusalText = QLineEdit()
+        self.priceText = QTextEdit()
+        self.refusalText = QTextEdit()
+        self.priceText.setMaximumHeight(70)
+        self.refusalText.setMaximumHeight(70)
         nl.addWidget(QLabel("Prix à débattre"))
         nl.addWidget(self.priceText)
         nl.addWidget(QLabel("Produit refusé à cause de"))
@@ -334,9 +348,13 @@ class MainWindow(QMainWindow):
         self.qfields = {}
         for k, lab, lim in QUALITY:
             e = QLineEdit()
+            e.setObjectName("qualityInput")
+            e.setValidator(QRegularExpressionValidator(QRegularExpression(r"^[0-9]{0,3}([,.][0-9]{0,2})?$"), e))
+            e.setAlignment(Qt.AlignCenter)
             e.setPlaceholderText(lim)
             self.qfields[k] = e
             form.addRow(lab, e)
+            e.textChanged.connect(self.on_input_changed)
         scroll = QScrollArea()
         scroll.setWidgetResizable(True)
         scroll.setWidget(box)
@@ -376,16 +394,23 @@ class MainWindow(QMainWindow):
                 e.setCurrentText(self.data.get(k, "Blé Dur"))
         for k, e in self.qfields.items():
             e.setText(self.values.get(k, ""))
-        self.priceText.setText(self.page.price.edit.text())
-        self.refusalText.setText(self.page.refusal.edit.text())
+        self.priceText.setPlainText(self.page.price.edit.text())
+        self.refusalText.setPlainText(self.page.refusal.edit.text())
         self.page.set_values(self.data, self.values, self.result)
+
+    def on_input_changed(self):
+        if hasattr(self, "gfields") and hasattr(self, "qfields"):
+            for k,e in self.gfields.items():
+                self.data[k] = e.text() if isinstance(e,QLineEdit) else e.currentText()
+            self.values = {k:e.text().strip() for k,e in self.qfields.items()}
+            self.page.set_values(self.data,self.values,self.result)
 
     def collect(self):
         for k, e in self.gfields.items():
             self.data[k] = e.text() if isinstance(e, QLineEdit) else e.currentText()
         self.values = {k: e.text().strip() for k, e in self.qfields.items()}
-        self.page.price.edit.setText(self.priceText.text())
-        self.page.refusal.edit.setText(self.refusalText.text())
+        self.page.price.edit.setText(self.priceText.toPlainText().strip())
+        self.page.refusal.edit.setText(self.refusalText.toPlainText().strip())
         self.data["status"] = "Accepté" if self.accept.property("active") else "Refusé"
 
     def set_status(self, s):
@@ -402,8 +427,8 @@ class MainWindow(QMainWindow):
         self.collect()
         self.result = calculate(self.values)
         self.page.set_values(self.data, self.values, self.result)
-        self.page.price.setVisible(self.result[2] > 6)
-        self.page.refusal.setVisible(self.data["status"] == "Refusé")
+        self.page.price.setVisible(True)
+        self.page.refusal.setVisible(True)
         self.page.save_stickers()
         self.statusBar().showMessage(
             f"Calcul terminé — Bonification +{self.result[0]:.2f} DA | "
@@ -471,8 +496,9 @@ class MainWindow(QMainWindow):
         self.zoomLabel.setText(f"{int(self.page.zoom * 100)}%")
 
     def fit_page(self):
-        h = max(500, self.scroll.viewport().height() - 20)
-        z = min(1.0, h / PH)
+        vw=max(500,self.scroll.viewport().width()-24)
+        vh=max(500,self.scroll.viewport().height()-24)
+        z=min(1.0,vw/PW,vh/PH)
         self.page.set_zoom(z)
         self.zoomLabel.setText(f"{int(z * 100)}%")
 
@@ -522,7 +548,10 @@ QTabBar::tab{padding:9px 18px;background:#edf3f8;border:0}
 QTabBar::tab:selected{background:#0d477d;color:white}
 QGroupBox{border:1px solid #d6e0ea;border-radius:8px;margin-top:10px;padding:10px;font-weight:700}
 QGroupBox::title{subcontrol-origin:margin;left:10px;padding:0 5px;color:#315a7d}
-QLineEdit,QComboBox{border:1px solid #c7d5e2;border-radius:6px;padding:7px;background:white}
+QLineEdit,QTextEdit,QComboBox{border:1px solid #c7d5e2;border-radius:6px;padding:7px;background:white}
+QLineEdit:focus,QTextEdit:focus,QComboBox:focus{border:2px solid #2a73a8}
+#qualityInput{text-align:center;font-weight:700;min-width:70px}
+#inputField{min-height:28px}
 QPushButton{border:1px solid #c7d5e2;border-radius:7px;background:white;padding:8px;font-weight:600}
 QPushButton[active="true"]{background:#14865a;color:white;border-color:#14865a}
 #bottomBar{background:#0d477d;border-top:1px solid #08355e}
