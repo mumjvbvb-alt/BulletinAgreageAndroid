@@ -77,7 +77,9 @@ class MainActivity : Activity() {
         text(R.id.grainsPiques), text(R.id.impur2Total), text(R.id.mitadin),
         text(R.id.bleTendre), text(R.id.mitadinTotal),
         statut.selectedItemPosition == 2,
-        page.getStickerConfig()
+        page.getStickerConfig(),
+        page.getPriceNoticeText(),
+        page.getRefusalNoticeText()
     )
 
     private fun text(id: Int) = findViewById<EditText>(id).text.toString().trim()
