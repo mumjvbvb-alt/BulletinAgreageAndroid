@@ -24,7 +24,9 @@ data class BulletinData(
     val decisionRefused:Boolean = false,
     val stickers: BulletinPageLayout.StickerConfig = BulletinPageLayout.StickerConfig(
         690f, 548f, 1f, 690f, 650f, 1f
-    )
+    ),
+    val priceNoticeText: String = "",
+    val refusalNoticeText: String = ""
 )
 
 object PdfGenerator {
@@ -45,7 +47,7 @@ object PdfGenerator {
             val c: Canvas = page.canvas
             c.drawColor(Color.WHITE)
             c.save()
-            c.scale(595f / BulletinPageLayout.DESIGN_W, 846f / BulletinPageLayout.DESIGN_H)
+            c.scale(595f / BulletinPageLayout.DESIGN_W, 842f / BulletinPageLayout.DESIGN_H)
             editor.drawForPdf(c, BulletinPageLayout.DESIGN_W.toInt(), BulletinPageLayout.DESIGN_H.toInt())
             c.restore()
             doc.finishPage(page)
