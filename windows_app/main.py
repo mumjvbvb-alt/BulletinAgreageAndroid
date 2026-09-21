@@ -99,7 +99,7 @@ class Sticker(QFrame):
 
 class BulletinCanvas(QWidget):
     def __init__(self):
-        super().__init__(); self.setFixedSize(int(DW),int(DH)); self.font_size=10
+        super().__init__(); self.scale_factor=1.0; self.setFixedSize(int(DW),int(DH)); self.font_size=10
         self.edits={}
         for name,x,y,w,h,numeric in FIELDS:
             e=QLineEdit(self); e.setObjectName(name); e.setMaxLength(80)
@@ -108,15 +108,25 @@ class BulletinCanvas(QWidget):
             self.edits[name]=e
         self.price=Sticker("PRIX À DÉBATTRE À ..........\nÀ CAUSE DE : .................................\n................................................",False,self)
         self.refusal=Sticker("PRODUIT REFUSÉ À CAUSE DE :\n................................................",True,self)
-        self.price.move(690,548); self.refusal.move(690,650); self.price.hide(); self.refusal.hide()
-        self.relayout(); self.set_font_size(10)
+        self.price.hide(); self.refusal.hide()
+        self.relayout(); self.set_font_size(10); self._place_stickers()
     def value(self,n): return self.edits[n].text().strip()
+    def set_scale(self,z):
+        self.scale_factor=max(.25,min(1.0,float(z)))
+        self.setFixedSize(int(DW*self.scale_factor),int(DH*self.scale_factor))
+        self.relayout(); self._place_stickers(); self.update()
+    def _place_stickers(self):
+        for s,x,y in ((self.price,690,548),(self.refusal,690,650)):
+            s.move(int(x*self.scale_factor),int(y*self.scale_factor))
+            s.resize(max(90,int(360*self.scale_factor)),max(30,int(100*self.scale_factor)))
     def relayout(self):
-        for n,x,y,w,h,_ in FIELDS: self.edits[n].setGeometry(x,y,w,h)
+        z=self.scale_factor
+        for n,x,y,w,h,_ in FIELDS: self.edits[n].setGeometry(int(x*z),int(y*z),int(w*z),int(h*z))
     def set_font_size(self,s):
         self.font_size=max(6,min(14,int(s)))
+        px=max(7,int(self.font_size*1.333*self.scale_factor))
         for e in self.edits.values():
-            e.setStyleSheet(f"QLineEdit{{border:0;background:transparent;color:#111;padding:0 3px;font-size:{self.font_size}pt;}}")
+            e.setStyleSheet(f"QLineEdit{{border:0;background:transparent;color:#111;padding:0 3px;font-size:{px}px;}}")
     def text(self,p,s,x,y,size=20,bold=False,w=520,align=Qt.AlignLeft):
         f=QFont("Times New Roman",size); f.setBold(bold); p.setFont(f)
         p.drawText(QRectF(x,y-size,w,size*1.55),align,s)
@@ -131,6 +141,7 @@ class BulletinCanvas(QWidget):
         p.restore()
     def paintEvent(self,event):
         p=QPainter(self); p.setRenderHint(QPainter.Antialiasing); p.fillRect(self.rect(),Qt.white)
+        p.scale(self.scale_factor,self.scale_factor)
         self.draw_page(p); p.end()
     def draw_page(self,p):
         self.logo(p,18,18); self.logo(p,18,18,True)
@@ -211,15 +222,11 @@ class MainWindow(QWidget):
     def set_font(self,s):
         self.font=max(6,min(14,int(s))); self.canvas.set_font_size(self.font); self.fontLabel.setText(str(self.font))
     def set_zoom(self,z):
-        self.zoom=max(.25,min(.85,z)); self.canvas.setFixedSize(int(DW*self.zoom),int(DH*self.zoom))
-        # Paint and child geometry are in design coordinates; scale the widget visually by resizing is not enough.
-        # Instead use a graphics-like transform via the preview viewport's zoom factor.
-        self.canvas.setMinimumSize(int(DW*self.zoom),int(DH*self.zoom))
-        self.canvas.resize(int(DW*self.zoom),int(DH*self.zoom))
+        self.zoom=max(.25,min(.85,z)); self.canvas.set_scale(self.zoom)
     def fit(self):
         avail=max(600,self.preview.viewport().height()-30)
         self.zoom=min(.78,max(.32,avail/DH))
-        self.canvas.setFixedSize(int(DW*self.zoom),int(DH*self.zoom))
+        self.canvas.set_scale(self.zoom)
     def resizeEvent(self,e): super().resizeEvent(e); self.fit()
     def status_changed(self,i):
         self.canvas.refusal.setVisible(i==1); self.canvas.update()
@@ -236,13 +243,13 @@ class MainWindow(QWidget):
         path=os.path.join(os.path.expanduser("~"),"Downloads",f"Bulletin_Agreage_{datetime.datetime.now():%Y%m%d_%H%M%S}.pdf")
         os.makedirs(os.path.dirname(path),exist_ok=True)
         # PDF export uses the full design canvas, independent of preview zoom.
-        oldsize=self.canvas.size(); self.canvas.setFixedSize(int(DW),int(DH))
+        oldzoom=self.zoom; self.canvas.set_scale(1.0)
         self.canvas.price.print_mode(True); self.canvas.refusal.print_mode(True)
         printer=QPrinter(QPrinter.HighResolution); printer.setOutputFormat(QPrinter.PdfFormat); printer.setOutputFileName(path); printer.setPageSize(QPrinter.A4); printer.setPageMargins(0,0,0,0,QPrinter.Millimeter)
         painter=QPainter(printer); target=QRectF(0,0,printer.pageRect(QPrinter.DevicePixel).width(),printer.pageRect(QPrinter.DevicePixel).height())
         painter.scale(target.width()/DW,target.height()/DH); self.canvas.render(painter,QPoint(0,0),QRect(0,0,int(DW),int(DH))); painter.end()
         self.canvas.price.print_mode(False); self.canvas.refusal.print_mode(False)
-        self.canvas.setFixedSize(*oldsize); self.fit()
+        self.canvas.set_scale(oldzoom); self.fit()
         QMessageBox.information(self,"تم التصدير","تم حفظ الملف في مجلد Downloads:\n"+path)
 
 if __name__=="__main__":
