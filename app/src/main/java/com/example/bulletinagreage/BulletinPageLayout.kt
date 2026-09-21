@@ -100,16 +100,32 @@ class BulletinPageLayout @JvmOverloads constructor(
         e.setTextColor(Color.BLACK)
         e.setHintTextColor(Color.TRANSPARENT)
         e.background = null
-        e.setPadding(if (topTextFields.contains(s.id)) 2 else 0, 0, 0, 0)
+        e.setPadding(if (topTextFields.contains(s.id)) 2 else 0, 0, 2, 0)
         e.gravity = if (topTextFields.contains(s.id)) {
             Gravity.CENTER_VERTICAL or Gravity.START
         } else {
             Gravity.CENTER
         }
-        e.textSize = if (s.numeric) 12f else 11f
+
+        // Keep every entered value strictly inside its dotted field.
+        // The text automatically shrinks when the value is longer than the field.
+        val topField = topTextFields.contains(s.id)
+        e.textSize = if (topField) 10f else 10f
         e.includeFontPadding = false
         e.maxLines = 1
         e.isSingleLine = true
+        e.setHorizontallyScrolling(false)
+        e.ellipsize = android.text.TextUtils.TruncateAt.END
+
+        if (android.os.Build.VERSION.SDK_INT >= 26) {
+            e.setAutoSizeTextTypeUniformWithConfiguration(
+                if (topField) 6 else 6,
+                if (topField) 10 else 10,
+                1,
+                android.util.TypedValue.COMPLEX_UNIT_SP
+            )
+        }
+
         e.inputType = if (s.numeric) {
             InputType.TYPE_CLASS_NUMBER or InputType.TYPE_NUMBER_FLAG_DECIMAL
         } else {
@@ -126,6 +142,24 @@ class BulletinPageLayout @JvmOverloads constructor(
     }
 
     fun field(id: Int): EditText = fields[id]!!
+
+    private fun fitTextFallback(field: EditText) {
+        val available = (field.measuredWidth - field.paddingLeft - field.paddingRight)
+            .toFloat()
+            .coerceAtLeast(8f)
+        val text = field.text.toString()
+        if (text.isEmpty()) return
+
+        val paint = field.paint
+        val current = paint.textSize
+        val measured = paint.measureText(text)
+        if (measured > available) {
+            val target = (current * available / measured).coerceAtLeast(
+                resources.displayMetrics.scaledDensity * 6f
+            )
+            field.setTextSize(android.util.TypedValue.COMPLEX_UNIT_PX, target)
+        }
+    }
 
     fun setResult(result: CalculationResult, imp1: Double, imp2: Double, mitadin: Double) {
         bonus = String.format(Locale.FRANCE, "%.2f", result.bonification)
@@ -229,16 +263,22 @@ class BulletinPageLayout @JvmOverloads constructor(
         )
 
         specs.forEach { s ->
-            fields[s.id]?.measure(
-                android.view.View.MeasureSpec.makeMeasureSpec(
-                    (s.w * width / DESIGN_W).roundToInt(),
-                    android.view.View.MeasureSpec.EXACTLY
-                ),
-                android.view.View.MeasureSpec.makeMeasureSpec(
-                    (s.h * width / DESIGN_W).roundToInt(),
-                    android.view.View.MeasureSpec.EXACTLY
+            fields[s.id]?.let { field ->
+                field.measure(
+                    android.view.View.MeasureSpec.makeMeasureSpec(
+                        (s.w * width / DESIGN_W).roundToInt(),
+                        android.view.View.MeasureSpec.EXACTLY
+                    ),
+                    android.view.View.MeasureSpec.makeMeasureSpec(
+                        (s.h * width / DESIGN_W).roundToInt(),
+                        android.view.View.MeasureSpec.EXACTLY
+                    )
                 )
-            )
+                // Re-apply after the exact field width is known (important for PDF export).
+                if (android.os.Build.VERSION.SDK_INT < 26 && field.text.isNotEmpty()) {
+                    fitTextFallback(field)
+                }
+            }
         }
     }
 
