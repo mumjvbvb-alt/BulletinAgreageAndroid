@@ -1,351 +1,244 @@
-import sys, os, math, datetime, base64
-from PySide6.QtCore import Qt, QRectF, QPoint
-from PySide6.QtGui import QPainter, QPen, QFont, QColor, QPixmap
+import sys, os, json, math, datetime
+from PySide6.QtCore import Qt, QRectF, QPoint, QSettings
+from PySide6.QtGui import QPainter, QPen, QFont, QColor
 from PySide6.QtWidgets import (
-    QApplication, QWidget, QLineEdit, QPushButton, QLabel, QComboBox,
-    QVBoxLayout, QHBoxLayout, QScrollArea, QMessageBox, QFrame,
-    QSpinBox, QGroupBox, QToolButton, QInputDialog
+    QApplication, QMainWindow, QWidget, QFrame, QLabel, QLineEdit, QComboBox,
+    QPushButton, QVBoxLayout, QHBoxLayout, QFormLayout, QScrollArea,
+    QGroupBox, QFileDialog, QMessageBox, QSplitter
 )
 from PySide6.QtPrintSupport import QPrinter
 
-# Exact reference proportions: 1338 x 2048.
-DW, DH = 1338.0, 2048.0
+PW, PH = 794, 1123
+NAV_W, PANEL_W = 190, 360
+GENERAL = [
+    ("producteur","Nom du producteur"),("adresse","Adresse"),("point","Point de collecte"),
+    ("agreur","Nom de l’agréeur"),("quantite","Quantité (Qx)"),("bon","N° Bon d’entrée"),
+    ("carte","N° de la carte d’identité")]
+QUALITY = [
+    ("poids","Poids spécifique (kg/hl)","76 - 80"),("humidite","Teneur en eau (%)","≤ 17"),
+    ("ergot","Ergot (%)","≤ 1"),("tamis","Matières passant au tamis 20 mm x 2.1 mm (%)","-"),
+    ("debris","Débris végétaux et éléments minéraux (%)","-"),("nuisibles","Graines nuisibles (%)","≤ 0,25"),
+    ("casses","Grains cassés (%)","≤ 5"),("boutes","Grains fortement boutés (%)","≤ 5"),
+    ("roux","Grains roux (%)","-"),("mouchetes","Grains fortement mouchetés (%)","-"),
+    ("punaises","Grains punaisés (%)","-"),("piques","Grains piqués (%)","-"),
+    ("mitadin","Grains mitadinés (%)","-"),("tendre","Blé tendre dans blé dur (%)","≤ 5")]
 
-# Clean crop of the wheat/ring logo from the supplied reference form.
-LOGO_B64 = """iVBORw0KGgoAAAANSUhEUgAAAFAAAABQCAYAAACOEfKtAAAFU0lEQVR42u1cy04UQRQ9DMyggw8QExcGXZmAbjXGpSvjhi/gC/gC/sCVS76AL3DniqUbtkaIK0UXLFATAwID0i64hZWbej96qpuupFIzQ0911+nbt+459w5A+9skjb8BzKJrXaurDWjcA7BEryea/Ai9BlABeEvvpzOdT8y7Sec7oXG+yeC9pEX8pvFNBhDFXBt0jlMaz9oE4DGN8usVOmYqAXjrNOeIjQtNfYRNAFYAjmhcZsfbmgB7RTNvdVUAlLvwVYuWxYo5l9lNGAuAvcJ2zVMA27TgKnLBIwB92oG/0VxVmy2wMjh9AeQis1ZdF+d5WqChBIPo8siJfk7jMABAAd5LT79afOvTuOphjeeS9Swwv6bqfFO6RuNX+vx6W9jBmiOIrgCKeVbp2Bs0bjG3MGyDJYqY7Y2jP/sF4CYDgu/ccmDeGiYiLOeptOANBqJ4xN5pANL1U4/5GslEVE5fPHrrGhonHu9ttpGoduhNhcWpLLrRgTS3wGM2rjHg5I1mVwHiXxq3JPBsPrWVANq4sAg79hVhzTb9bXgVqJwNQFPcJhZ6KB23K82dkho2HkDdgmUA96XPQufLAuBUQYALf/aRrPAugBl2Q84d5zohH/kMwI7ndxvPhVVUbt4jzGkdlQvhwjKQAHDHEcBQfbH45iqAxgDId/Wh5BIqAHNNDKSfA/jC+KmvmOACoI0LN5aJPKKLf0/vbwaICSYAORe+1VYqV9GiZL6amgu3KiunE0BV6ok8bjHa5sKF5bE1WTmbgsx9Vt9BTOBc2MWntp7KqcIOFy7sGhZdCS7sQ+UGpXHhktOa8q4tFj+iG7Ip0bUiAtxSm8gNyz51i4Cc7riwW15YgOeSlevywpFiQseFIwDUceE9AI/p9R+2KRULcCouPCJNUJdkUuVYxMazKR0zh4v6GFNcOV0CYCLs+EHvlxgXtmXRfLoqy8ep4ZEBQBOzqa3psmg/6fMn9P6QcdfbGurl2jkX1t2QkQVAW545e9ymo14cQFNemFcSnDns0L55YRuAFex566TNRv51SSCdmGC7IZzKDdioksfEuZ7QMT8drduUt45uLvKTWOx3OvYF/NKa3CWI+XbZNdjColAAc9Rwa+WiKgGAqsCXiwkxXPgegE+WnTxbXOlbjhYKoIn8z+Li5xEIFCdiAIzK8oUURHIQP9Mcr2qkcuIcr+h7nyPAC6aGoVm0WP0uNZW7pgmzQrqzPBaTxzVF+iE3JCatOQVztVdM8H4p0OZSKSoy8x2SlMZVWntK40OymKMS5SeXR3iA8CJzmwX6xG0TCaxQm+XzleBN3aZ2uIZFNjHBFJjr2jDycVYC6PtDFlM/dMxB6PK4rgtQ5Zldm0+xUq0Angcmb2LzwiHKkY/CbYwSkk+YQd3RceFY+S3UYC7X25PMcZfufN/zYv7SBd0lxTd215wE8IA0xcbkcZP7hMQCrSwm9BOdI8mm2WuIxfygc0xKsV0xLXRbryPz3wdwkGn+IiywDiZxQ2I3xbXSAcxpgckAPCz5Aktv3SMcLpYAwEyvs6F2W2CuJlQZ12qvDsCcFjhTcpiQyfqEqrxNfnYwjkc49T/K6XxgQ1oW8aQ0MaFE6mpcbwyAKfXAunbf4rJywvcdFOoHU1yf8p+Z9ehFKrlookDuOon/ia5hzrsTI+n7ZuXqFCOA+MS6trSjJ4Uf38g8+wTiuHa5FE2wig90PffreCpS5oXHVYMc+vPZZNVZqSoT6qxBTlW0nqzAMlVxkcvFrTJf5dpiq8dyX1/2Cyy5J6uRjimwbGoPqbWxCgaAX4lvU3u2nznkctKl9KhipX+c9NIXEktZLAAAAABJRU5ErkJggg=="""
+def fnum(v):
+    try:return float(str(v).replace(",","."))
+    except:return None
+def steps(excess,step):return 0 if excess<=0 else math.ceil(excess/step-1e-9)
 
-FIELDS = [
-    ("date", 805, 278, 225, 34, False),
-    ("producteur", 260, 383, 275, 32, False),
-    ("adresse", 210, 418, 325, 32, False),
-    ("pointCollecte", 315, 453, 220, 32, False),
-    ("agreur", 790, 383, 265, 32, False),
-    ("quantite", 775, 418, 240, 32, False),
-    ("numeroBon", 820, 453, 235, 32, False),
-    ("carteIdentite", 105, 1870, 370, 38, False),
-    ("poids", 655, 642, 105, 28, True),
-    ("humidite", 655, 674, 105, 32, True),
-    ("ergot", 655, 714, 105, 35, True),
-    ("tamis", 655, 758, 105, 65, True),
-    ("debris", 655, 833, 99, 99, True),
-    ("grainesNuisibles", 655, 941, 105, 60, True),
-    ("impur1Total", 655, 1009, 105, 34, True),
-    ("casses", 655, 1050, 105, 31, True),
-    ("boutes", 655, 1088, 105, 43, True),
-    ("roux", 655, 1139, 105, 41, True),
-    ("mouchetes", 655, 1239, 105, 31, True),
-    ("punaises", 655, 1279, 105, 33, True),
-    ("piques", 655, 1322, 105, 41, True),
-    ("impur2Total", 655, 1372, 105, 32, True),
-    ("mitadin", 655, 1422, 105, 44, True),
-    ("bleTendre", 655, 1475, 105, 36, True),
-    ("mitadinTotal", 655, 1520, 105, 52, True),
-]
-
-def num(s):
-    try:
-        return float((s or "").replace(",", ".").strip())
-    except Exception:
-        return None
-
-def tranches(exces, taille):
-    return 0 if exces <= 0 else math.ceil(exces / taille)
-
-def calculate(v):
-    p,h,e = num(v("poids")), num(v("humidite")), num(v("ergot"))
-    t,d,gn = [num(v(k)) or 0 for k in ("tamis","debris","grainesNuisibles")]
-    c,b,r,m,pu,pi = [num(v(k)) or 0 for k in ("casses","boutes","roux","mouchetes","punaises","piques")]
-    imp1, imp2 = t+d+gn, c+b+r+m+pu+pi
-    mit, tender = num(v("mitadin")) or 0, num(v("bleTendre")) or 0
-    mit_total = mit + tender
-    bonus = refa = 0.0
-    rows, notes = {}, []
-    def add(k, bb=0.0, rr=0.0):
-        nonlocal bonus, refa
-        if bb or rr: rows[k] = (bb, rr)
-        bonus += bb; refa += rr
+def calculate(q):
+    p,h,e=fnum(q.get("poids")),fnum(q.get("humidite")),fnum(q.get("ergot"))
+    v={k:(fnum(q.get(k)) or 0) for k,_,_ in QUALITY}
+    i1=v["tamis"]+v["debris"]+v["nuisibles"]
+    i2=v["casses"]+v["boutes"]+v["roux"]+v["mouchetes"]+v["punaises"]+v["piques"]
+    mit=v["mitadin"]+v["tendre"]; bonus=red=0.; rows={}; notes=[]
+    def add(k,b=0,r=0):
+        nonlocal bonus,red
+        bonus+=b; red+=r; rows[k]=(b,r)
     if p is not None:
-        if p > 80:
-            add("poids", tranches(min(p,82)-80,.25)*.15 + tranches(min(p,83)-82,.25)*.10 +
-                (tranches(min(p,84)-83,.25)+tranches(max(p-84,0),.25))*.05)
-        elif 72 <= p < 76:
-            add("poids", rr=tranches(76-max(p,75),.25)*.10 + tranches(75-max(p,74),.25)*.20 + tranches(74-p,.25)*.30)
-        elif p < 72:
-            notes.append("Poids spécifique inférieur à 72 kg/hl : hors critère sain, loyal et marchand.")
-    if h is not None and h > 17: notes.append("Humidité supérieure à 17 % : hors limite.")
-    if e is not None and e > 1: notes.append("Ergot supérieur à 1 ‰ : hors limite.")
-    if imp1 < 1: add("impur1", bb=tranches(1-imp1,.25)*.125)
-    elif 3 < imp1 <= 6: add("impur1", rr=tranches(imp1-3,.25)*.125)
-    elif imp1 > 6: notes.append("Impuretés 1ère catégorie > 6 % : prix à débattre.")
-    if c > 5: add("casses", rr=tranches(c-5,.25)*.075)
-    if b > 5: add("boutes", rr=tranches(b-5,1)*.05)
-    if 10 < imp2 <= 20: add("impur2", rr=tranches(imp2-10,1)*.50)
-    elif imp2 > 20: notes.append("Impuretés 2ème catégorie > 20 % : hors barème.")
-    if 0 <= mit_total <= 10: add("mitadin", bb=.25)
-    elif 20 < mit_total <= 70: add("mitadin", rr=tranches(mit_total-20,1)*.05)
-    elif mit_total > 70: notes.append("Mitadin > 70 % : paiement au prix du blé tendre avec son barème.")
-    if tender > 10: notes.append("Blé tendre > 10 % : paiement du blé dur au prix du blé tendre avec son barème.")
-    return bonus, refa, imp1, imp2, mit_total, rows, notes
+        if p>80:add("poids",steps(p-80,.25)*.15)
+        elif p>=72:add("poids",r=steps(76-p,.25)*.10)
+        else:notes.append("Poids spécifique inférieur à 72 kg/hl : hors limite.")
+    if h is not None and h>17:notes.append("Humidité supérieure à 17 % : hors limite.")
+    if e is not None and e>1:add("ergot",r=steps(e-1,.25)*.50)
+    if i1<1:add("imp1",b=steps(1-i1,.25)*.125)
+    elif 3<i1<=6:add("imp1",r=steps(i1-3,.25)*.125)
+    elif i1>6:notes.append("Impuretés 1ère catégorie > 6 % : prix à débattre.")
+    if v["casses"]>5:add("casses",r=steps(v["casses"]-5,.25)*.075)
+    if v["boutes"]>5:add("boutes",r=steps(v["boutes"]-5,1)*.05)
+    if 10<i2<=20:add("imp2",r=steps(i2-10,1)*.50)
+    elif i2>20:notes.append("Impuretés 2ème catégorie > 20 % : hors barème.")
+    if 20<mit<=70:add("mit",r=steps(mit-20,1)*.05)
+    elif mit>70:notes.append("Mitadin + blé tendre > 70 % : situation à traiter selon le barème.")
+    if v["tendre"]>10:notes.append("Blé tendre > 10 % : mention spéciale.")
+    return bonus,red,i1,i2,mit,rows,notes
 
 class Sticker(QFrame):
-    def __init__(self, text, refusal=False, parent=None):
-        super().__init__(parent)
-        self.refusal = refusal
-        self.drag = None
-        self.resize_start = None
-        self.setObjectName("refusalSticker" if refusal else "priceSticker")
-        self.edit = QLineEdit(text, self)
-        self.edit.setAlignment(Qt.AlignCenter)
-        self.edit.setStyleSheet("QLineEdit{border:0;background:transparent;padding:6px;font-weight:700;}")
-        self.edit.setReadOnly(False)
-        self.edit.setToolTip("انقر مرتين أو استعمل زر تعديل الملصق لتغيير النص")
-        self.handle = QLabel("↘", self)
-        self.moveh = QLabel("✥", self)
-        self.edit.mouseDoubleClickEvent = self._double_edit
-        for w in (self.handle, self.moveh): w.setAlignment(Qt.AlignCenter)
-        self.handle.setStyleSheet("background:rgba(0,0,0,18);font-size:18px;border:0;")
-        self.moveh.setStyleSheet("background:rgba(0,0,0,12);font-size:16px;border:0;")
-        self.resize(360,100)
-        self.moveh.mousePressEvent=self._move_press; self.moveh.mouseMoveEvent=self._move_move
-        self.handle.mousePressEvent=self._resize_press; self.handle.mouseMoveEvent=self._resize_move
-    def _double_edit(self, e):
-        self.edit_text_dialog()
-    def edit_text_dialog(self):
-        text, ok = QInputDialog.getMultiLineText(self, "تعديل الملصق",
-            "النص الذي سيظهر داخل الملصق:", self.edit.text())
-        if ok:
-            self.edit.setText(text)
-            self.adjust_text()
-    def adjust_text(self):
-        self.edit.setToolTip("النص الحالي: " + self.edit.text())
-    def resizeEvent(self,e):
-        self.edit.setGeometry(8,6,max(1,self.width()-58),max(1,self.height()-12))
-        self.moveh.setGeometry(self.width()-50,0,50,40)
-        self.handle.setGeometry(self.width()-54,self.height()-54,54,54)
-    def _move_press(self,e): self.drag=(e.globalPosition().toPoint(),self.pos())
-    def _move_move(self,e):
+    def __init__(self,title,text,accent,parent):
+        super().__init__(parent); self.drag=None; self.accent=accent
+        lay=QVBoxLayout(self); lay.setContentsMargins(10,6,10,6)
+        self.title=QLabel(title); self.title.setStyleSheet(f"color:{accent};font-weight:800")
+        self.edit=QLineEdit(text); self.edit.setStyleSheet("border:0;background:transparent;font-weight:700")
+        lay.addWidget(self.title); lay.addWidget(self.edit); self.resize(285,72)
+    def mousePressEvent(self,e):
+        if e.button()==Qt.LeftButton:self.drag=(e.globalPosition().toPoint(),self.pos())
+    def mouseMoveEvent(self,e):
         if self.drag:
-            p0,p1=self.drag
-            self.move(p1+(e.globalPosition().toPoint()-p0))
-    def _resize_press(self,e): self.resize_start=(e.globalPosition().toPoint(),self.size())
-    def _resize_move(self,e):
-        if self.resize_start:
-            p0,s=self.resize_start
-            d=e.globalPosition().toPoint()-p0
-            self.resize(max(180,s.width()+d.x()),max(65,s.height()+d.y()))
-    def mouseReleaseEvent(self,e): self.drag=self.resize_start=None
-    def print_mode(self,on):
-        self.moveh.setVisible(not on); self.handle.setVisible(not on)
-        self.edit.setReadOnly(on)
+            a,b=self.drag; self.move(b+e.globalPosition().toPoint()-a)
+    def mouseReleaseEvent(self,e):self.drag=None
+    def wheelEvent(self,e):
+        if e.modifiers()&Qt.ControlModifier:
+            z=1.05 if e.angleDelta().y()>0 else .95
+            self.resize(max(190,int(self.width()*z)),max(55,int(self.height()*z)))
+        else:super().wheelEvent(e)
 
-class BulletinCanvas(QWidget):
+class InvoicePage(QWidget):
     def __init__(self):
-        super().__init__()
-        self.scale_factor=1.0
-        self.setFixedSize(int(DW),int(DH))
-        self.font_size=10
-        self.edits={}
-        for name,x,y,w,h,numeric in FIELDS:
-            e=QLineEdit(self)
-            e.setObjectName(name)
-            e.setMaxLength(80)
-            e.setAlignment(Qt.AlignCenter if numeric else Qt.AlignLeft|Qt.AlignVCenter)
-            e.setStyleSheet("QLineEdit{border:0;background:transparent;color:#111;padding:0 3px;font-family:'Times New Roman';font-weight:700;}")
-            self.edits[name]=e
-        self.price=Sticker("PRIX À DÉBATTRE À .......... | À CAUSE DE : ................................. | ................................................",False,self)
-        self.refusal=Sticker("PRODUIT REFUSÉ À CAUSE DE : | ................................................",True,self)
+        super().__init__(); self.zoom=1.; self.data={}; self.values={}; self.result=None
+        self.settings=QSettings("OAIC","BulletinAgreage")
+        self.setMinimumSize(PW,PH)
+        self.price=Sticker("PRIX À DÉBATTRE","PRIX À DÉBATTRE À .......... — À CAUSE DE : ................","#a76b00",self)
+        self.refusal=Sticker("PRODUIT REFUSÉ À CAUSE DE","........................................................","#c51f3a",self)
+        self.load_stickers()
+    def load_stickers(self):
+        for s,k,d in [(self.price,"price",QPoint(42,315)),(self.refusal,"refusal",QPoint(405,315))]:
+            s.setGeometry(self.settings.value(k+"X",d.x(),int),self.settings.value(k+"Y",d.y(),int),
+                          self.settings.value(k+"W",285,int),self.settings.value(k+"H",72,int))
+            s.edit.setText(self.settings.value(k+"Text",s.edit.text()))
         self.price.hide(); self.refusal.hide()
-        self.result_rows={}
-        self.result_totals=(0.0,0.0,"")
-        self.relayout(); self.set_font_size(10); self._place_stickers()
-    def value(self,n): return self.edits[n].text().strip()
-    def set_scale(self,z):
-        self.scale_factor=max(.25,min(1.0,float(z)))
-        self.setFixedSize(int(DW*self.scale_factor),int(DH*self.scale_factor))
-        self.relayout(); self._place_stickers(); self.update()
-    def _place_stickers(self):
-        for s,x,y in ((self.price,690,570),(self.refusal,690,675)):
-            s.move(int(x*self.scale_factor),int(y*self.scale_factor))
-            s.resize(max(90,int(360*self.scale_factor)),max(30,int(100*self.scale_factor)))
-    def relayout(self):
-        z=self.scale_factor
-        for n,x,y,w,h,_ in FIELDS: self.edits[n].setGeometry(int(x*z),int(y*z),int(w*z),int(h*z))
-    def set_font_size(self,s):
-        self.font_size=max(6,min(14,int(s)))
-        px=max(7,int(self.font_size*1.333*self.scale_factor))
-        for e in self.edits.values():
-            e.setStyleSheet(f"QLineEdit{{border:0;background:transparent;color:#111;padding:0 3px;font-family:'Times New Roman';font-weight:700;font-size:{px}px;}}")
-    def text(self,p,s,x,y,size=20,bold=False,w=520,align=Qt.AlignLeft):
-        f=QFont("Times New Roman",size); f.setBold(bold); p.setFont(f); p.drawText(QRectF(x,y-size,w,size*1.55),align,s)
-    def center(self,p,s,x,y,w,size=19,bold=False):
-        self.text(p,s,x,y,size,bold,w,Qt.AlignCenter)
-    def logo(self,p,x,y):
-        pix=QPixmap()
-        pix.loadFromData(base64.b64decode(LOGO_B64))
-        p.drawPixmap(QRectF(x-45,y-45,x+45,y+45).toRect(),pix)
-    def paintEvent(self,event):
-        p=QPainter(self); p.setRenderHint(QPainter.Antialiasing); p.fillRect(self.rect(),Qt.white)
-        p.scale(self.scale_factor,self.scale_factor)
-        self.draw_page(p); p.end()
-    def draw_page(self,p):
-        self.logo(p,70,72); self.logo(p,DW-70,72)
-        self.center(p,"OFFICE ALGERIEN INTERPROFESSIONNEL DES CEREALES",115,82,1108,31,True)
-        self.center(p,"Coopérative de Céréales et des Légumes Secs de BATNA",170,145,998,28,True)
-        self.center(p,"Bulletin d'Agréage",330,205,678,38,True)
-        self.text(p,"Espèce :",104,270,28,True,130); self.text(p,"Blé Dur",235,270,32,True,180)
-        self.text(p,"Date :",700,300,28,True,100)
-        head=[("Nom du producteur :",104,395,250),("Adresse :",104,430,160),("Point de collecte :",104,465,220),
-              ("Nom de l'agréeur :",700,395,240),("Quantité :",700,430,160),("N° Bon d'entrée :",700,465,190)]
-        for label,x,y,w in head: self.text(p,label,x,y,24,True,w)
-        self.draw_table(p)
-        self.text(p,"Référence : Décret n°88-152 du 26 juillet 1988 fixant les barèmes de bonification et de réfaction applicables aux céréales",104,1780,15,False,1050)
-        self.text(p,"et aux légumes secs. 1ère partie : Relations entre producteurs et organismes stockeurs.",104,1800,15,False,900)
-        self.text(p,"Producteur",105,1870,22,True,300); self.text(p,"N° de la carte d’identité",105,1920,21,True,330); self.text(p,"Agréeur",1030,1870,22,True,250)
-    def draw_table(self,p):
-        x0,xcat,x1,x2,x3,x4,x5,x6=75,180,525,655,760,925,1062,1160
-        ys=[530,638,670,710,753,828,937,1005,1047,1084,1135,1184,1235,1274,1317,1367,1417,1471,1515,1576,1620,1670]
-        p.setPen(QPen(QColor("#111"),1.5)); p.drawRect(QRectF(x0,ys[0],x6-x0,ys[-1]-ys[0]))
-        for y in ys[1:-1]: p.drawLine(x0,y,x6,y)
-        for x in (xcat,x1,x2,x3,x4,x5): p.drawLine(x,ys[0],x,ys[-1])
-        self.center(p,"Paramètres",xcat,585,x1-xcat,24,True)
-        self.center(p,"Limites",x1,560,x2-x1,22,True); self.center(p,"(sans",x1,584,x2-x1,13,True); self.center(p,"bonification ni",x1,600,x2-x1,13,True); self.center(p,"réfaction)",x1,616,x2-x1,13,True)
-        self.center(p,"Valeurs",x2,585,x3-x2,22,True)
-        self.center(p,"Bonification",x3,565,x4-x3,20,True); self.center(p,"(D.A.)",x3,588,x4-x3,18,True)
-        self.center(p,"Réfaction",x4,565,x5-x4,20,True); self.center(p,"(D.A.)",x4,588,x5-x4,18,True)
-        self.center(p,"Observation",x5,585,x6-x5,20,True)
-        self.vertical(p,"Impuretés 1ère catégorie",126,750,1005)
-        self.vertical(p,"Impuretés 2ème catégorie",126,1047,1417)
-        self.vertical(p,"Grains\nmitadinés",126,1417,1670)
-        rows=[
-            (638,670,"Poids spécifique (kg/hl)","[76 - 80]","poids"),
-            (670,710,"Teneur en eau (%)","≤ 17",None),(710,753,"Ergot (‰)","≤ 1",None),
-            (753,828,"Matières qui passent à travers\nle tamis 20 mm x2.1mm (%)","-",None),
-            (828,937,"Les débris végétaux et les\néléments minéraux (%)\nRetenus par le tamis 20 mm x2.1mm","-",None),
-            (937,1005,"Graines nuisibles (%)","≤ 0,25",None),(1005,1047,"Total (%)","[1 - 3]","impur1"),
-            (1047,1084,"Grains cassés (%)","≤ 5","casses"),(1084,1135,"Grains fortement boutés (%)","≤ 5","boutes"),
-            (1135,1184,"Grains Roux (%)","-",None),(1184,1274,"Grains fortement mouchetés\n(%)","-",None),
-            (1274,1317,"Grains punaisés (%)","-",None),(1317,1367,"Grains piqués (%)","-",None),
-            (1367,1417,"Total (%)","≤ 10","impur2"),(1417,1471,"Grains mitadinés (%)","-","mitadin"),
-            (1471,1515,"Blé tendre dans blé dur (%)","≤ 5","bleTendre"),(1515,1576,"Total (%)","[10 - 20]","mitadin")
-        ]
-        for top,bottom,label,limit,key in rows:
-            cy=(top+bottom)/2+7
-            lines=label.split("\\n")
-            if len(lines)==1: self.text(p,label,195,cy,19,True,325)
-            else:
-                for i,line in enumerate(lines): self.text(p,line,195,cy+i*24,17 if i else 18,True,325)
-            self.center(p,limit,x1,cy,x2-x1,19,True)
-            if key and key in self.result_rows:
-                b,r=self.result_rows[key]
-                if b: self.center(p,f"{b:.2f}",x3,cy,x4-x3,18,True)
-                if r: self.center(p,f"{r:.2f}",x4,cy,x5-x4,18,True)
-        self.center(p,"Total des Bonifications et Réfactions",x0,1708,x2-x0,20,True)
-        b,r,obs=self.result_totals
-        if b or r:
-            self.center(p,f"{b:.2f}",x3,1708,x4-x3,19,True); self.center(p,f"{r:.2f}",x4,1708,x5-x4,19,True)
-            self.center(p,obs[:18],x5,1708,x6-x5,13,False)
-    def vertical(self,p,text,x,top,bottom):
-        p.save(); p.rotate(-90,x,(top+bottom)/2)
-        for i,line in enumerate(text.split("\\n")): self.text(p,line,x,(top+bottom)/2+i*22,19,True,220,Qt.AlignCenter)
-        p.restore()
-    def update_results(self,r):
-        bonus,refa,imp1,imp2,mit,rows,notes=r
-        self.edits["impur1Total"].setText(f"{imp1:.2f}")
-        self.edits["impur2Total"].setText(f"{imp2:.2f}")
-        self.edits["mitadinTotal"].setText(f"{mit:.2f}")
-        self.result_rows=rows
-        self.result_totals=(bonus,refa,notes[0] if notes else "")
-        self.update()
-
-class MainWindow(QWidget):
-    def __init__(self):
-        super().__init__()
-        self.setWindowTitle("Bulletin d’Agréage — Edition professionnelle")
-        self.resize(1500,960); self.setMinimumSize(1150,760)
-        self.canvas=BulletinCanvas(); self.zoom=.48; self.font=10
-        self.preview=QScrollArea(); self.preview.setWidget(self.canvas); self.preview.setWidgetResizable(False); self.preview.setAlignment(Qt.AlignCenter)
-        side=QFrame(); side.setObjectName("side"); side.setMinimumWidth(320); side.setMaximumWidth(380)
-        sl=QVBoxLayout(side); sl.setContentsMargins(20,20,20,20); sl.setSpacing(10)
-        title=QLabel("Bulletin d’Agréage"); title.setObjectName("appTitle")
-        sub=QLabel("Reproduction fidèle du formulaire de référence"); sub.setObjectName("subTitle")
-        sl.addWidget(title); sl.addWidget(sub)
-        box=QGroupBox("حالة الاستلام"); bl=QVBoxLayout(box)
-        self.status=QComboBox(); self.status.addItems(["قابل للاستلام","مرفوض"]); bl.addWidget(self.status); sl.addWidget(box)
-        fb=QGroupBox("حجم خط البيانات"); fl=QHBoxLayout(fb)
-        fm=QToolButton(); fm.setText("−"); fp=QToolButton(); fp.setText("+"); self.fontLabel=QLabel("10"); self.fontLabel.setAlignment(Qt.AlignCenter)
-        fl.addWidget(fm); fl.addWidget(self.fontLabel,1); fl.addWidget(fp); sl.addWidget(fb)
-        zb=QGroupBox("المعاينة"); zl=QHBoxLayout(zb)
-        zm=QToolButton(); zm.setText("−"); zp=QToolButton(); zp.setText("+"); fit=QPushButton("ملاءمة")
-        zl.addWidget(zm); zl.addWidget(fit,1); zl.addWidget(zp); sl.addWidget(zb)
-        sb=QGroupBox("الملصقات"); ssl=QVBoxLayout(sb)
-        self.priceBtn=QPushButton("✎ تعديل ملصق PRIX À DÉBATTRE")
-        self.refusalBtn=QPushButton("✎ تعديل ملصق الرفض")
-        ssl.addWidget(self.priceBtn); ssl.addWidget(self.refusalBtn); sl.addWidget(sb)
-        calc=QPushButton("حساب النتائج"); calc.setObjectName("primary")
-        pdf=QPushButton("تصدير PDF"); pdf.setObjectName("pdf")
-        sl.addWidget(calc); sl.addWidget(pdf)
-        self.summary=QLabel("أدخل القيم ثم اضغط «حساب النتائج»."); self.summary.setWordWrap(True); self.summary.setObjectName("summary"); sl.addWidget(self.summary)
-        sl.addStretch(1)
-        sl.addWidget(QLabel("يمكن تحريك الملصق من ✥ وتغيير حجمه من ↘.\nوالنص يمكن تعديله من أزرار التعديل أو بالنقر مرتين."))
-        root=QHBoxLayout(self); root.setContentsMargins(0,0,0,0); root.addWidget(side); root.addWidget(self.preview,1)
-        self.status.currentIndexChanged.connect(self.status_changed)
-        calc.clicked.connect(self.do_calc); pdf.clicked.connect(self.export_pdf)
-        self.priceBtn.clicked.connect(lambda:self.canvas.price.edit_text_dialog())
-        self.refusalBtn.clicked.connect(lambda:self.canvas.refusal.edit_text_dialog())
-        fm.clicked.connect(lambda:self.set_font(self.font-1)); fp.clicked.connect(lambda:self.set_font(self.font+1))
-        zm.clicked.connect(lambda:self.set_zoom(self.zoom-.05)); zp.clicked.connect(lambda:self.set_zoom(self.zoom+.05)); fit.clicked.connect(self.fit)
-        self.status_changed(0); self.fit()
-    def set_font(self,s):
-        self.font=max(6,min(14,int(s))); self.canvas.set_font_size(self.font); self.fontLabel.setText(str(self.font))
+    def save_stickers(self):
+        for s,k in [(self.price,"price"),(self.refusal,"refusal")]:
+            for n,v in [("X",s.x()),("Y",s.y()),("W",s.width()),("H",s.height()),("Text",s.edit.text())]:
+                self.settings.setValue(k+n,v)
     def set_zoom(self,z):
-        self.zoom=max(.25,min(.85,z)); self.canvas.set_scale(self.zoom)
-    def fit(self):
-        avail=max(600,self.preview.viewport().height()-30); self.zoom=min(.76,max(.30,avail/DH)); self.canvas.set_scale(self.zoom)
-    def resizeEvent(self,e): super().resizeEvent(e); self.fit()
-    def status_changed(self,i):
-        self.canvas.refusal.setVisible(i==1); self.canvas.update()
-    def do_calc(self):
-        r=calculate(self.canvas.value); self.canvas.update_results(r)
-        bonus,refa,imp1,imp2,mit,rows,notes=r
-        self.canvas.price.setVisible(imp1>6 or imp2>20)
-        state="مرفوض" if self.status.currentIndex()==1 else "قابل للاستلام"
-        txt=f"<b>{state}</b><br>Bonification: <b>{bonus:.2f} DA</b><br>Réfaction: <b>{refa:.2f} DA</b><br>Solde: <b>{bonus-refa:.2f} DA</b><br><br>Imp. 1ère: {imp1:.2f}% • Imp. 2ème: {imp2:.2f}% • Mitadin+tendre: {mit:.2f}%"
-        if notes: txt += "<br><br>" + "<br>".join("• "+n for n in notes)
-        self.summary.setText(txt)
+        self.zoom=max(.5,min(1.4,z)); self.setFixedSize(int(PW*self.zoom),int(PH*self.zoom)); self.update()
+    def txt(self,p,s,x,y,w=200,size=9,bold=False,align=Qt.AlignLeft):
+        f=QFont("Times New Roman",size); f.setBold(bold); p.setFont(f); p.drawText(QRectF(x,y,w,size*1.7),align,s)
+    def center(self,p,s,x,y,w,size=9,bold=False):self.txt(p,s,x,y,w,size,bold,Qt.AlignCenter)
+    def paintEvent(self,e):
+        p=QPainter(self); p.setRenderHint(QPainter.Antialiasing); p.scale(self.zoom,self.zoom); p.fillRect(0,0,PW,PH,Qt.white); self.draw(p); p.end()
+    def draw(self,p):
+        p.setPen(QPen(QColor("#1d4f86"),1))
+        self.center(p,"◈",25,35,45,28,True); self.center(p,"◈",724,35,45,28,True)
+        self.center(p,"OFFICE ALGERIEN INTERPROFESSIONNEL DES CEREALES",80,28,635,12,True)
+        self.center(p,"Coopérative de Céréales et des Légumes Secs de BATNA",80,50,635,11,True)
+        self.center(p,"Bulletin d’Agréage",190,84,415,19,True)
+        self.txt(p,"Espèce :",38,112,70,11,True); self.txt(p,self.data.get("espece","Blé Dur"),105,112,190,11,True)
+        self.txt(p,"Date :",500,112,55,11,True); self.txt(p,self.data.get("date",""),555,112,180,11,True)
+        pairs=[("Nom du producteur :","producteur",38,138,300),("Nom de l’agréeur :","agreur",500,138,255),
+               ("Adresse :","adresse",38,160,300),("Quantité :","quantite",500,160,255),
+               ("Point de collecte :","point",38,182,300),("N° Bon d’entrée :","bon",500,182,255)]
+        for lab,k,x,y,w in pairs:self.txt(p,lab,x,y,145,9,True);self.txt(p,self.data.get(k,""),x+145,y,w-145,9)
+        p.setPen(QPen(QColor("#23925f"),1));p.drawRoundedRect(QRectF(38,202,718,34),5,5)
+        self.txt(p,"Résultat de l’agréage :",48,213,145,9,True); ok=self.data.get("status")=="Accepté"
+        self.center(p,"◉" if ok else "○",198,213,30,12,True);self.txt(p,"Accepté",225,213,70,9,True)
+        self.center(p,"○" if ok else "◉",360,213,30,12,True);self.txt(p,"Refusé",390,213,70,9,True)
+        top=255; widths=[238,82,72,95,95,112]; xs=[38]
+        for w in widths:xs.append(xs[-1]+w)
+        heights=[34,23,23,45,58,28,23,23,23,40,23,23,23,30,30,30,28]
+        rows=[("Poids spécifique (kg/hl)","[76 - 80]","poids"),("Teneur en eau (%)","≤ 17","humidite"),
+              ("Ergot (%)","≤ 1","ergot"),("Matières passant au tamis 20 mm x 2.1mm (%)","-","tamis"),
+              ("Débris végétaux et éléments minéraux (%)","-","debris"),("Graines nuisibles (%)","≤ 0,25","nuisibles"),
+              ("Total 1ère catégorie (%)","[1 - 3]","imp1"),("Grains cassés (%)","≤ 5","casses"),
+              ("Grains fortement boutés (%)","≤ 5","boutes"),("Grains Roux (%)","-","roux"),
+              ("Grains fortement mouchetés (%)","-","mouchetes"),("Grains punaisés (%)","-","punaises"),
+              ("Grains piqués (%)","-","piques"),("Total 2ème catégorie (%)","≤ 10","imp2"),
+              ("Grains mitadinés (%)","-","mit"),("Blé tendre dans blé dur (%)","≤ 5","tendre"),("Total mitadinés (%)","[10 - 20]","mit")]
+        p.setBrush(QColor("#eef6ff"));p.drawRect(QRectF(xs[0],top,xs[-1]-xs[0],34))
+        for x in xs[1:-1]:p.drawLine(x,top,x,top+34+sum(heights))
+        self.center(p,"Paramètres",xs[0],top+22,widths[0],10,True);self.center(p,"Limites",xs[1],top+18,widths[1],9,True)
+        self.center(p,"Valeurs",xs[2],top+22,widths[2],9,True);self.center(p,"Bonification",xs[3],top+15,widths[3],8,True)
+        self.center(p,"Réfaction",xs[4],top+15,widths[4],8,True);self.center(p,"Observation",xs[5],top+22,widths[5],8,True)
+        y=top+34
+        for (lab,lim,key),h in zip(rows,heights):
+            p.setBrush(Qt.NoBrush);p.drawRect(QRectF(xs[0],y,xs[-1]-xs[0],h))
+            self.txt(p,lab,xs[0]+5,y+8,widths[0]-10,7.1,key.startswith("imp"))
+            self.center(p,lim,xs[1],y+9,widths[1],7.5);self.center(p,self.values.get(key,""),xs[2],y+9,widths[2],8,True)
+            b=r="0,00"
+            if self.result and key in self.result[5]:
+                bb,rr=self.result[5][key];b=f"{bb:+.2f}".replace(".",",");r=f"{-rr:+.2f}".replace(".",",")
+            self.center(p,b,xs[3],y+9,widths[3],7.5);self.center(p,r,xs[4],y+9,widths[4],7.5);self.center(p,"-",xs[5],y+9,widths[5],7.5);y+=h
+        self.center(p,"Total des Bonifications et Réfactions",xs[0],y+18,xs[2]-xs[0],9,True)
+        b=r=0
+        if self.result:b=self.result[0];r=self.result[1]
+        self.center(p,f"+ {b:.2f}".replace(".",","),xs[3],y+18,widths[3],9,True);self.center(p,f"- {r:.2f}".replace(".",","),xs[4],y+18,widths[4],9,True)
+        self.txt(p,"Référence : Décret n°88-152 du 26 juillet 1988 fixant les barèmes de bonification et de réfaction applicables aux céréales",38,y+40,718,7)
+        self.txt(p,"et aux légumes secs, 1ère partie : Relations entre producteurs et organismes stockeurs.",38,y+52,718,7)
+        self.txt(p,"Producteur",38,y+82,180,9,True);self.txt(p,"N° de la carte d’identité",38,y+101,210,8,True)
+        self.txt(p,self.data.get("carte","................................"),225,y+101,220,8);self.txt(p,"Agréeur",580,y+82,150,9,True)
+        self.txt(p,self.data.get("agreur","................................"),580,y+101,170,8)
+    def set_values(self,d,v,r):self.data=d;self.values=v;self.result=r;self.update()
+
+class MainWindow(QMainWindow):
+    def __init__(self):
+        super().__init__();self.setWindowTitle("Bulletin d’Agréage");self.resize(1500,920);self.setMinimumSize(1200,760)
+        self.data={"espece":"Blé Dur","date":datetime.date.today().strftime("%d / %m / %Y"),"status":"Accepté"};self.values={k:"" for k,_,_ in QUALITY};self.result=None
+        root=QWidget();self.setCentralWidget(root);outer=QHBoxLayout(root);outer.setContentsMargins(0,0,0,0);outer.setSpacing(0)
+        outer.addWidget(self.nav());center=QWidget();cv=QVBoxLayout(center);cv.setContentsMargins(8,8,8,8);cv.addWidget(self.toolbar())
+        self.page=InvoicePage();self.scroll=QScrollArea();self.scroll.setWidget(self.page);self.scroll.setWidgetResizable(False);self.scroll.setAlignment(Qt.AlignCenter);cv.addWidget(self.scroll,1);outer.addWidget(center,1);outer.addWidget(self.panel());self.refresh();self.fit_page()
+    def nav(self):
+        f=QFrame();f.setObjectName("nav");f.setFixedWidth(NAV_W);l=QVBoxLayout(f);l.setContentsMargins(12,18,12,18)
+        b=QLabel("◈  Bulletin d’Agréage");b.setObjectName("brand");l.addWidget(b)
+        for t,fn in [("⌂  Accueil",self.new_doc),("＋  Nouveau",self.new_doc),("▣  Ouvrir",self.open_doc),("▣  Enregistrer",self.save_doc),("▣  Exporter PDF",self.export_pdf),("⚙  Paramètres",lambda:None)]:
+            q=QPushButton(t);q.setObjectName("navbtn");q.clicked.connect(fn);l.addWidget(q)
+        l.addStretch();l.addWidget(QLabel("O.A.I.C\nBATNA",objectName="navfoot"));return f
+    def toolbar(self):
+        f=QFrame();f.setObjectName("toolbar");l=QHBoxLayout(f);l.setContentsMargins(8,6,8,6)
+        for t,fn in [("−",lambda:self.zoom(-.1)),("+",lambda:self.zoom(.1)),("Ajuster",self.fit_page),("Modifier les tampons",self.toggle_stickers),("Sauvegarder position",self.save_stickers)]:
+            q=QPushButton(t);q.clicked.connect(fn);l.addWidget(q)
+        l.addStretch();self.zoomLabel=QLabel("100%");l.addWidget(self.zoomLabel);return f
+    def panel(self):
+        f=QFrame();f.setObjectName("panel");f.setFixedWidth(PANEL_W);root=QVBoxLayout(f);root.setContentsMargins(12,12,12,12)
+        t=QLabel("Saisie des données");t.setObjectName("paneltitle");root.addWidget(t)
+        tabs=QHBoxLayout();a=QPushButton("Données générales");b=QPushButton("Paramètres qualité");tabs.addWidget(a);tabs.addWidget(b);root.addLayout(tabs)
+        self.stack=QStackedWidget();root.addWidget(self.stack,1);self.stack.addWidget(self.general_panel());self.stack.addWidget(self.quality_panel());a.clicked.connect(lambda:self.stack.setCurrentIndex(0));b.clicked.connect(lambda:self.stack.setCurrentIndex(1));return f
+    def general_panel(self):
+        w=QWidget();l=QVBoxLayout(w);box=QGroupBox("Informations générales");form=QFormLayout(box);self.gfields={}
+        self.gfields["espece"]=QComboBox();self.gfields["espece"].addItems(["Blé Dur","Blé Tendre","Orge","Autre"]);form.addRow("Espèce",self.gfields["espece"])
+        for k,lab in [("date","Date")]+GENERAL:e=QLineEdit();self.gfields[k]=e;form.addRow(lab,e)
+        l.addWidget(box);s=QGroupBox("Résultat de l’agréage");sl=QHBoxLayout(s);self.accept=QPushButton("◉  Accepté");self.reject=QPushButton("○  Refusé");sl.addWidget(self.accept);sl.addWidget(self.reject);l.addWidget(s)
+        self.accept.clicked.connect(lambda:self.set_status("Accepté"));self.reject.clicked.connect(lambda:self.set_status("Refusé"))
+        n=QGroupBox("Notes / Mentions");nl=QVBoxLayout(n);self.priceText=QLineEdit();self.refusalText=QLineEdit();nl.addWidget(QLabel("PRIX À DÉBATTRE"));nl.addWidget(self.priceText);nl.addWidget(QLabel("PRODUIT REFUSÉ À CAUSE DE"));nl.addWidget(self.refusalText);l.addWidget(n)
+        self.calc=QPushButton("Calculer les résultats");self.calc.setObjectName("primary");self.pdf=QPushButton("Exporter en PDF");self.pdf.setObjectName("pdf");l.addWidget(self.calc);l.addWidget(self.pdf);self.calc.clicked.connect(self.calculate);self.pdf.clicked.connect(self.export_pdf);l.addStretch();return w
+    def quality_panel(self):
+        w=QWidget();l=QVBoxLayout(w);box=QGroupBox("Valeurs mesurées");form=QFormLayout(box);self.qfields={}
+        for k,lab,_ in QUALITY:e=QLineEdit();e.setPlaceholderText("Valeur");self.qfields[k]=e;form.addRow(lab,e)
+        l.addWidget(box);l.addStretch();return w
+    def refresh(self):
+        for k,e in self.gfields.items():
+            e.setText(self.data.get(k,"")) if isinstance(e,QLineEdit) else e.setCurrentText(self.data.get(k,"Blé Dur"))
+        for k,e in self.qfields.items():e.setText(self.values.get(k,""))
+        self.priceText.setText(self.page.price.edit.text());self.refusalText.setText(self.page.refusal.edit.text());self.page.set_values(self.data,self.values,self.result)
+    def collect(self):
+        for k,e in self.gfields.items():self.data[k]=e.text() if isinstance(e,QLineEdit) else e.currentText()
+        self.values={k:e.text().strip() for k,e in self.qfields.items()};self.page.price.edit.setText(self.priceText.text());self.page.refusal.edit.setText(self.refusalText.text());self.data["status"]="Accepté" if self.accept.property("active") else "Refusé"
+    def set_status(self,s):
+        self.data["status"]=s;self.accept.setProperty("active",s=="Accepté");self.reject.setProperty("active",s=="Refusé")
+        self.accept.setText(("◉" if s=="Accepté" else "○")+"  Accepté");self.reject.setText(("◉" if s=="Refusé" else "○")+"  Refusé");self.page.update()
+    def calculate(self):
+        self.collect();self.result=calculate(self.values);self.page.set_values(self.data,self.values,self.result)
+        self.page.price.setVisible(self.result[2]>6);self.page.refusal.setVisible(self.data["status"]=="Refusé");self.page.save_stickers()
+        self.statusBar().showMessage(f"Calcul terminé — Bonification +{self.result[0]:.2f} DA | Réfaction -{self.result[1]:.2f} DA")
+    def new_doc(self):
+        self.data={"espece":"Blé Dur","date":datetime.date.today().strftime("%d / %m / %Y"),"status":"Accepté"};self.values={k:"" for k,_,_ in QUALITY};self.result=None;self.refresh();self.set_status("Accepté")
+    def save_doc(self):
+        self.collect();path,_=QFileDialog.getSaveFileName(self,"Enregistrer bulletin","","Bulletin (*.json)")
+        if path:
+            with open(path,"w",encoding="utf-8") as f:json.dump({"data":self.data,"values":self.values,"price":self.page.price.edit.text(),"refusal":self.page.refusal.edit.text()},f,ensure_ascii=False,indent=2)
+            self.statusBar().showMessage("Bulletin enregistré")
+    def open_doc(self):
+        path,_=QFileDialog.getOpenFileName(self,"Ouvrir bulletin","","Bulletin (*.json)")
+        if not path:return
+        try:
+            with open(path,encoding="utf-8") as f:d=json.load(f)
+            self.data=d.get("data",self.data);self.values=d.get("values",self.values);self.page.price.edit.setText(d.get("price",self.page.price.edit.text()));self.page.refusal.edit.setText(d.get("refusal",self.page.refusal.edit.text()));self.refresh();self.set_status(self.data.get("status","Accepté"));self.calculate()
+        except Exception as e:QMessageBox.critical(self,"Erreur",str(e))
+    def save_stickers(self):self.page.save_stickers();self.statusBar().showMessage("Positions et tailles sauvegardées")
+    def toggle_stickers(self):
+        self.page.price.setVisible(True);self.page.refusal.setVisible(True);self.statusBar().showMessage("Déplacez les tampons par glisser-déposer ; Ctrl + molette pour redimensionner")
+    def zoom(self,d):self.page.set_zoom(self.page.zoom+d);self.zoomLabel.setText(f"{int(self.page.zoom*100)}%")
+    def fit_page(self):
+        h=max(500,self.scroll.viewport().height()-20);z=min(1.,h/PH);self.page.set_zoom(z);self.zoomLabel.setText(f"{int(z*100)}%")
     def export_pdf(self):
-        self.do_calc()
-        path=os.path.join(os.path.expanduser("~"),"Downloads",f"Bulletin_Agreage_{datetime.datetime.now():%Y%m%d_%H%M%S}.pdf")
-        os.makedirs(os.path.dirname(path),exist_ok=True)
-        oldzoom=self.zoom; self.canvas.set_scale(1.0)
-        self.canvas.price.print_mode(True); self.canvas.refusal.print_mode(True)
-        printer=QPrinter(QPrinter.HighResolution); printer.setOutputFormat(QPrinter.PdfFormat); printer.setOutputFileName(path); printer.setPageSize(QPrinter.A4); printer.setPageMargins(0,0,0,0,QPrinter.Millimeter)
-        painter=QPainter(printer)
-        target=QRectF(0,0,printer.pageRect(QPrinter.DevicePixel).width(),printer.pageRect(QPrinter.DevicePixel).height())
-        painter.scale(target.width()/DW,target.height()/DH)
-        self.canvas.render(painter,QPoint(0,0),QRectF(0,0,DW,DH).toRect())
-        painter.end()
-        self.canvas.price.print_mode(False); self.canvas.refusal.print_mode(False)
-        self.canvas.set_scale(oldzoom); self.fit()
-        QMessageBox.information(self,"تم التصدير","تم حفظ الملف في مجلد Downloads:\n"+path)
+        self.calculate();path,_=QFileDialog.getSaveFileName(self,"Exporter PDF","","PDF (*.pdf)")
+        if not path:return
+        old=self.page.zoom;self.page.set_zoom(1.);printer=QPrinter(QPrinter.HighResolution);printer.setOutputFormat(QPrinter.PdfFormat);printer.setOutputFileName(path);printer.setPageSize(QPrinter.A4);printer.setPageMargins(0,0,0,0,QPrinter.Millimeter)
+        p=QPainter(printer);r=printer.pageRect(QPrinter.DevicePixel);p.scale(r.width()/PW,r.height()/PH);self.page.render(p,QPoint(0,0),self.page.rect());p.end();self.page.set_zoom(old);self.fit_page();QMessageBox.information(self,"تم التصدير",f"تم إنشاء ملف PDF:\n{path}")
 
 if __name__=="__main__":
-    app=QApplication(sys.argv); app.setLayoutDirection(Qt.RightToLeft)
-    app.setStyleSheet("""
-        QWidget{font-family:'Segoe UI';font-size:10pt;color:#17202a;}
-        QWidget#side{background:#f7f9fc;border-left:1px solid #dfe5ec;}
-        QLabel#appTitle{font-size:23pt;font-weight:800;color:#16263d;}
-        QLabel#subTitle{color:#697586;margin-bottom:8px;}
-        QGroupBox{border:1px solid #dbe2ea;border-radius:12px;margin-top:8px;padding:12px;background:#fff;font-weight:700;}
-        QGroupBox::title{subcontrol-origin:margin;left:12px;padding:0 5px;color:#506070;}
-        QComboBox,QLineEdit{background:#fff;border:1px solid #cfd8e3;border-radius:8px;padding:7px;}
-        QPushButton{background:#fff;border:1px solid #cfd8e3;border-radius:9px;padding:10px 12px;font-weight:700;}
-        QPushButton:hover{background:#f1f5f9;}
-        QPushButton#primary{background:#2457d6;color:white;border:0;font-size:11pt;}
-        QPushButton#pdf{background:#16263d;color:white;border:0;font-size:11pt;}
-        QToolButton{background:#fff;border:1px solid #cfd8e3;border-radius:8px;min-width:34px;min-height:30px;font-weight:800;}
-        QLabel#summary{background:#fff;border:1px solid #dbe2ea;border-radius:12px;padding:12px;color:#334155;}
-        QScrollArea{background:#eef1f5;border:0;}
-        QFrame#priceSticker{background:#fff4cf;border:2px solid #c28a19;border-radius:10px;}
-        QFrame#refusalSticker{background:#ffe7ec;border:2px solid #d52b42;border-radius:10px;}
-    """)
-    w=MainWindow(); w.show(); sys.exit(app.exec())
+    app=QApplication(sys.argv);app.setStyle("Fusion");app.setLayoutDirection(Qt.LeftToRight)
+    app.setStyleSheet('''
+QWidget{font-family:"Segoe UI";font-size:10pt;color:#172b4d}QMainWindow{background:#edf2f7}
+#nav{background:#0e3764}#brand{color:white;font-size:16pt;font-weight:800;padding:10px}
+#navbtn{color:white;background:transparent;border:0;border-radius:7px;text-align:left;padding:12px;font-weight:600}#navbtn:hover{background:#174b82}
+#navfoot{color:#b9d2eb;background:#0a2b50;border-radius:8px;padding:16px;text-align:center}
+#toolbar,#panel{background:white;border:1px solid #d8e1eb;border-radius:8px}#toolbar QPushButton{border:1px solid #d3dce7;background:#fff;padding:8px 12px;border-radius:7px}
+#panel{border-radius:0;border-top:0;border-bottom:0}#paneltitle{font-size:17pt;font-weight:800;color:#123e70;padding:6px}
+QGroupBox{border:1px solid #d8e1eb;border-radius:9px;margin-top:10px;padding:10px;font-weight:700}QGroupBox::title{subcontrol-origin:margin;left:10px;padding:0 5px;color:#365a7d}
+QLineEdit,QComboBox{border:1px solid #cbd7e5;border-radius:6px;padding:7px;background:#fff}QPushButton{border:1px solid #cbd7e5;border-radius:7px;background:#fff;padding:8px;font-weight:600}
+QPushButton#primary{background:#0878d1;color:#fff;border:0}QPushButton#pdf{background:#173f70;color:#fff;border:0}
+QScrollArea{background:#dfe7ef;border:0}QFrame#sticker{background:#fff8dc;border:1px solid #c58b22;border-radius:8px}QStatusBar{background:#0e3764;color:#fff}
+''')
+    w=MainWindow();w.show();sys.exit(app.exec())
