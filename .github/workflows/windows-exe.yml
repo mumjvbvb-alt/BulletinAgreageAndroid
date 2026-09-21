@@ -23,3 +23,5 @@ jobs:
         with:
           name: BulletinAgreage-Windows
           path: windows_app/dist/BulletinAgreage.exe
+
+# Trigger build for the latest main branch.
