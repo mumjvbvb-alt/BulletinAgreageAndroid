@@ -18,6 +18,34 @@
                 android:background="@drawable/control_field"
                 android:paddingStart="10dp" android:paddingEnd="10dp"/>
         </LinearLayout>
+        <LinearLayout
+            android:layout_width="match_parent" android:layout_height="wrap_content"
+            android:orientation="horizontal" android:gravity="center_vertical"
+            android:padding="6dp" android:layout_marginBottom="8dp"
+            android:background="#FFFFFF">
+            <TextView
+                android:layout_width="wrap_content" android:layout_height="44dp"
+                android:gravity="center_vertical"
+                android:text="حجم الخط:" android:textStyle="bold"
+                android:textSize="14sp" android:textColor="#111111"/>
+            <Button
+                android:id="@+id/fontMinus" android:layout_width="48dp" android:layout_height="44dp"
+                android:text="−" android:textSize="20sp"
+                android:background="@drawable/control_button"/>
+            <TextView
+                android:id="@+id/fontSizeValue" android:layout_width="48dp" android:layout_height="44dp"
+                android:gravity="center" android:text="10"
+                android:textStyle="bold" android:textSize="15sp" android:textColor="#111111"/>
+            <Button
+                android:id="@+id/fontPlus" android:layout_width="48dp" android:layout_height="44dp"
+                android:text="+" android:textSize="20sp"
+                android:background="@drawable/control_button"/>
+            <Button
+                android:id="@+id/fontReset" android:layout_width="wrap_content" android:layout_height="44dp"
+                android:layout_marginStart="6dp"
+                android:text="افتراضي" android:textSize="12sp"
+                android:background="@drawable/control_button"/>
+        </LinearLayout>
         <com.example.bulletinagreage.BulletinPageLayout
             android:id="@+id/bulletinPage" android:layout_width="match_parent"
             android:layout_height="wrap_content" android:elevation="2dp" />
