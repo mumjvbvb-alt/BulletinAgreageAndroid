@@ -18,6 +18,24 @@ class MainActivity : Activity() {
         page = findViewById(R.id.bulletinPage)
         statut = findViewById(R.id.statut)
         statut.setSelection(0)
+
+        val fontSizeValue = findViewById<TextView>(R.id.fontSizeValue)
+        fun applyFontSize(size: Float) {
+            val value = size.coerceIn(6f, 14f)
+            page.setInputFontSize(value)
+            fontSizeValue.text = value.toInt().toString()
+        }
+        applyFontSize(10f)
+        findViewById<Button>(R.id.fontMinus).setOnClickListener {
+            applyFontSize(page.getInputFontSize() - 1f)
+        }
+        findViewById<Button>(R.id.fontPlus).setOnClickListener {
+            applyFontSize(page.getInputFontSize() + 1f)
+        }
+        findViewById<Button>(R.id.fontReset).setOnClickListener {
+            applyFontSize(10f)
+        }
+
         statut.setOnItemSelectedListener(object : android.widget.AdapterView.OnItemSelectedListener {
             override fun onItemSelected(parent: android.widget.AdapterView<*>?, view: android.view.View?, position: Int, id: Long) {
                 page.setDecision(position == 2)
