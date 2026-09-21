@@ -417,12 +417,9 @@ class BulletinPageLayout @JvmOverloads constructor(
 
         private fun defaultText(): String =
             if (refusalNotice) {
-                "PRODUIT REFUSÉ À CAUSE DE :
-................................................"
+                "PRODUIT REFUSÉ À CAUSE DE :\n................................................"
             } else {
-                "PRIX À DÉBATTRE À ..........
-À CAUSE DE : .................................
-................................................"
+                "PRIX À DÉBATTRE À ..........\nÀ CAUSE DE : .................................\n................................................"
             }
 
         fun getTextValue(): String = editor.text.toString()
@@ -686,8 +683,7 @@ class BulletinPageLayout @JvmOverloads constructor(
             size: Float,
             typeface: Typeface
         ) {
-            text.split("
-").forEachIndexed { i, s ->
+            text.split("\n").forEachIndexed { i, s ->
                 txt(c, s, x, y + i * (size + 7f), size, Paint.Align.LEFT, typeface)
             }
         }
