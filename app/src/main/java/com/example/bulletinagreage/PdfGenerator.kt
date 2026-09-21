@@ -31,11 +31,12 @@ object PdfGenerator {
     fun generateAndOpen(activity: Activity, d: BulletinData, r: CalculationResult) {
         try {
             val doc = PdfDocument()
-            val page = doc.startPage(PdfDocument.PageInfo.Builder(595, 846, 1).create())
+            val page = doc.startPage(PdfDocument.PageInfo.Builder(595, 842, 1).create())
             val editor = BulletinPageLayout(activity)
             editor.populate(d)
             editor.setDecision(d.decisionRefused)
             editor.applyStickerConfig(d.stickers)
+            editor.setStickerTexts(d.priceNoticeText, d.refusalNoticeText)
             val imp1 = d.impur1Total.replace(',', '.').toDoubleOrNull() ?: 0.0
             val imp2 = d.impur2Total.replace(',', '.').toDoubleOrNull() ?: 0.0
             val mit = d.mitadinTotal.replace(',', '.').toDoubleOrNull() ?: 0.0
