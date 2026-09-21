@@ -26,7 +26,8 @@ data class BulletinData(
         690f, 548f, 1f, 690f, 650f, 1f
     ),
     val priceNoticeText: String = "",
-    val refusalNoticeText: String = ""
+    val refusalNoticeText: String = "",
+    val inputFontSp: Float = 10f
 )
 
 object PdfGenerator {
@@ -36,6 +37,7 @@ object PdfGenerator {
             val page = doc.startPage(PdfDocument.PageInfo.Builder(595, 842, 1).create())
             val editor = BulletinPageLayout(activity)
             editor.populate(d)
+            editor.setInputFontSize(d.inputFontSp)
             editor.setDecision(d.decisionRefused)
             editor.applyStickerConfig(d.stickers)
             editor.setStickerTexts(d.priceNoticeText, d.refusalNoticeText)
