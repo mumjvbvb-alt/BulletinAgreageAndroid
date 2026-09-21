@@ -9,9 +9,9 @@ import android.text.InputType
 import android.util.AttributeSet
 import android.view.Gravity
 import android.view.MotionEvent
-import android.view.ScaleGestureDetector
 import android.widget.EditText
 import android.widget.FrameLayout
+import android.widget.TextView
 import kotlin.math.roundToInt
 import java.util.Locale
 
@@ -29,15 +29,22 @@ class BulletinPageLayout @JvmOverloads constructor(
         val numeric: Boolean = false, val readOnly: Boolean = false
     )
 
+    /*
+     * These coordinates deliberately follow the printed dotted lines.
+     * The previous version placed the top EditTexts below/away from the
+     * actual lines, which made names, address, collection point, etc.
+     * look as if they were entered in the wrong place.
+     */
     private val specs = listOf(
-        Spec(R.id.date, 710f, 276f, 340f, 45f),
-        Spec(R.id.producteur, 205f, 366f, 315f, 38f),
-        Spec(R.id.adresse, 185f, 402f, 345f, 38f),
-        Spec(R.id.pointCollecte, 205f, 438f, 330f, 38f),
-        Spec(R.id.agreur, 705f, 366f, 320f, 38f),
-        Spec(R.id.quantite, 705f, 402f, 300f, 38f),
-        Spec(R.id.numeroBon, 705f, 438f, 335f, 38f),
+        Spec(R.id.date, 805f, 246f, 225f, 30f),
+        Spec(R.id.producteur, 380f, 336f, 155f, 30f),
+        Spec(R.id.adresse, 250f, 373f, 285f, 30f),
+        Spec(R.id.pointCollecte, 340f, 410f, 195f, 30f),
+        Spec(R.id.agreur, 940f, 336f, 110f, 30f),
+        Spec(R.id.quantite, 835f, 373f, 175f, 30f),
+        Spec(R.id.numeroBon, 885f, 410f, 165f, 30f),
         Spec(R.id.carteIdentite, 110f, 1778f, 360f, 40f),
+
         Spec(R.id.poidsSpecifique, 655f, 642f, 105f, 24f, true),
         Spec(R.id.humidite, 655f, 674f, 105f, 32f, true),
         Spec(R.id.ergot, 655f, 714f, 105f, 35f, true),
@@ -65,21 +72,30 @@ class BulletinPageLayout @JvmOverloads constructor(
     private var currentImp1 = 0.0
     private var currentImp2 = 0.0
     private var refused = false
+
     private val page = PageCanvas(context)
     private val priceSticker = NoticeSticker(context, false)
     private val refusalSticker = NoticeSticker(context, true)
+
+    private val topTextFields = setOf(
+        R.id.date, R.id.producteur, R.id.adresse, R.id.pointCollecte,
+        R.id.agreur, R.id.quantite, R.id.numeroBon, R.id.carteIdentite
+    )
 
     init {
         setWillNotDraw(false)
         setBackgroundColor(Color.WHITE)
         addView(page, LayoutParams(-1, -1))
+
         specs.forEach { addField(it) }
+
         priceSticker.designX = 690f
         priceSticker.designY = 548f
         refusalSticker.designX = 690f
         refusalSticker.designY = 650f
         priceSticker.visibility = GONE
         refusalSticker.visibility = GONE
+
         addView(priceSticker, LayoutParams(360, 100))
         addView(refusalSticker, LayoutParams(360, 100))
     }
@@ -90,18 +106,28 @@ class BulletinPageLayout @JvmOverloads constructor(
         e.setTextColor(Color.BLACK)
         e.setHintTextColor(Color.TRANSPARENT)
         e.background = null
-        e.setPadding(0, 0, 0, 0)
-        e.gravity = Gravity.CENTER
+        e.setPadding(if (topTextFields.contains(s.id)) 2 else 0, 0, 0, 0)
+        e.gravity = if (topTextFields.contains(s.id)) {
+            Gravity.CENTER_VERTICAL or Gravity.START
+        } else {
+            Gravity.CENTER
+        }
         e.textSize = if (s.numeric) 12f else 11f
         e.includeFontPadding = false
         e.maxLines = 1
-        e.inputType = if (s.numeric)
+        e.isSingleLine = true
+        e.horizontallyScrolling = true
+        e.inputType = if (s.numeric) {
             InputType.TYPE_CLASS_NUMBER or InputType.TYPE_NUMBER_FLAG_DECIMAL
-        else InputType.TYPE_CLASS_TEXT or InputType.TYPE_TEXT_FLAG_CAP_SENTENCES
+        } else {
+            InputType.TYPE_CLASS_TEXT or InputType.TYPE_TEXT_FLAG_CAP_SENTENCES
+        }
+
         if (s.readOnly) {
             e.isFocusable = false
             e.isClickable = false
         }
+
         fields[s.id] = e
         addView(e, LayoutParams(1, 1))
     }
@@ -115,10 +141,12 @@ class BulletinPageLayout @JvmOverloads constructor(
         rowAdjustments = result.rows
         currentImp1 = imp1
         currentImp2 = imp2
-        updateNotices()
+
         field(R.id.impur1Total).setText(String.format(Locale.FRANCE, "%.2f", imp1))
         field(R.id.impur2Total).setText(String.format(Locale.FRANCE, "%.2f", imp2))
         field(R.id.mitadinTotal).setText(String.format(Locale.FRANCE, "%.2f", mitadin))
+
+        updateNotices()
         page.invalidate()
     }
 
@@ -138,10 +166,10 @@ class BulletinPageLayout @JvmOverloads constructor(
     fun applyStickerConfig(config: StickerConfig) {
         priceSticker.designX = config.priceX
         priceSticker.designY = config.priceY
-        priceSticker.zoom = config.priceScale
+        priceSticker.zoom = config.priceScale.coerceIn(0.45f, 4f)
         refusalSticker.designX = config.refusalX
         refusalSticker.designY = config.refusalY
-        refusalSticker.zoom = config.refusalScale
+        refusalSticker.zoom = config.refusalScale.coerceIn(0.45f, 4f)
         requestLayout()
         invalidate()
     }
@@ -152,25 +180,42 @@ class BulletinPageLayout @JvmOverloads constructor(
     }
 
     private fun updateNotices() {
-        priceSticker.visibility = if (currentImp1 > 6.0 || currentImp2 > 20.0) VISIBLE else GONE
+        priceSticker.visibility =
+            if (currentImp1 > 6.0 || currentImp2 > 20.0) VISIBLE else GONE
         refusalSticker.visibility = if (refused) VISIBLE else GONE
+
+        priceSticker.bringToFront()
+        refusalSticker.bringToFront()
         requestLayout()
         invalidate()
     }
 
     fun populate(d: BulletinData) {
         val values = mapOf(
-            R.id.producteur to d.producteur, R.id.adresse to d.adresse,
-            R.id.pointCollecte to d.pointCollecte, R.id.agreur to d.agreur,
-            R.id.date to d.date, R.id.quantite to d.quantite, R.id.numeroBon to d.numeroBon,
-            R.id.carteIdentite to d.carteIdentite, R.id.poidsSpecifique to d.poids,
-            R.id.humidite to d.humidite, R.id.ergot to d.ergot, R.id.tamis to d.tamis,
-            R.id.debris to d.debris, R.id.grainesNuisibles to d.grainesNuisibles,
-            R.id.impur1Total to d.impur1Total, R.id.grainsCasses to d.casses,
-            R.id.grainsBoutes to d.boutes, R.id.grainsRoux to d.roux,
-            R.id.grainsMouchetes to d.mouchetes, R.id.grainsPunaises to d.punaises,
-            R.id.grainsPiques to d.piques, R.id.impur2Total to d.impur2Total,
-            R.id.mitadin to d.mitadin, R.id.bleTendre to d.bleTendre,
+            R.id.producteur to d.producteur,
+            R.id.adresse to d.adresse,
+            R.id.pointCollecte to d.pointCollecte,
+            R.id.agreur to d.agreur,
+            R.id.date to d.date,
+            R.id.quantite to d.quantite,
+            R.id.numeroBon to d.numeroBon,
+            R.id.carteIdentite to d.carteIdentite,
+            R.id.poidsSpecifique to d.poids,
+            R.id.humidite to d.humidite,
+            R.id.ergot to d.ergot,
+            R.id.tamis to d.tamis,
+            R.id.debris to d.debris,
+            R.id.grainesNuisibles to d.grainesNuisibles,
+            R.id.impur1Total to d.impur1Total,
+            R.id.grainsCasses to d.casses,
+            R.id.grainsBoutes to d.boutes,
+            R.id.grainsRoux to d.roux,
+            R.id.grainsMouchetes to d.mouchetes,
+            R.id.grainsPunaises to d.punaises,
+            R.id.grainsPiques to d.piques,
+            R.id.impur2Total to d.impur2Total,
+            R.id.mitadin to d.mitadin,
+            R.id.bleTendre to d.bleTendre,
             R.id.mitadinTotal to d.mitadinTotal
         )
         values.forEach { (id, value) -> field(id).setText(value) }
@@ -180,12 +225,26 @@ class BulletinPageLayout @JvmOverloads constructor(
         val width = resources.displayMetrics.widthPixels
         val height = (width * DESIGN_H / DESIGN_W).roundToInt()
         setMeasuredDimension(width, height)
-        page.measure(android.view.View.MeasureSpec.makeMeasureSpec(width, android.view.View.MeasureSpec.EXACTLY),
-            android.view.View.MeasureSpec.makeMeasureSpec(height, android.view.View.MeasureSpec.EXACTLY))
+
+        page.measure(
+            android.view.View.MeasureSpec.makeMeasureSpec(
+                width, android.view.View.MeasureSpec.EXACTLY
+            ),
+            android.view.View.MeasureSpec.makeMeasureSpec(
+                height, android.view.View.MeasureSpec.EXACTLY
+            )
+        )
+
         specs.forEach { s ->
             fields[s.id]?.measure(
-                android.view.View.MeasureSpec.makeMeasureSpec((s.w * width / DESIGN_W).roundToInt(), android.view.View.MeasureSpec.EXACTLY),
-                android.view.View.MeasureSpec.makeMeasureSpec((s.h * width / DESIGN_W).roundToInt(), android.view.View.MeasureSpec.EXACTLY)
+                android.view.View.MeasureSpec.makeMeasureSpec(
+                    (s.w * width / DESIGN_W).roundToInt(),
+                    android.view.View.MeasureSpec.EXACTLY
+                ),
+                android.view.View.MeasureSpec.makeMeasureSpec(
+                    (s.h * width / DESIGN_W).roundToInt(),
+                    android.view.View.MeasureSpec.EXACTLY
+                )
             )
         }
     }
@@ -193,11 +252,15 @@ class BulletinPageLayout @JvmOverloads constructor(
     override fun onLayout(changed: Boolean, l: Int, t: Int, r: Int, b: Int) {
         val scale = measuredWidth / DESIGN_W
         page.layout(0, 0, measuredWidth, measuredHeight)
+
         specs.forEach { s ->
-            val x = (s.x * scale).roundToInt(); val y = (s.y * scale).roundToInt()
-            val w = (s.w * scale).roundToInt(); val h = (s.h * scale).roundToInt()
+            val x = (s.x * scale).roundToInt()
+            val y = (s.y * scale).roundToInt()
+            val w = (s.w * scale).roundToInt()
+            val h = (s.h * scale).roundToInt()
             fields[s.id]?.layout(x, y, x + w, y + h)
         }
+
         layoutSticker(priceSticker)
         layoutSticker(refusalSticker)
     }
@@ -208,6 +271,7 @@ class BulletinPageLayout @JvmOverloads constructor(
         val h = (sticker.baseH * sticker.zoom * scale).roundToInt()
         val x = (sticker.designX * scale).roundToInt()
         val y = (sticker.designY * scale).roundToInt()
+
         sticker.measure(
             android.view.View.MeasureSpec.makeMeasureSpec(w, android.view.View.MeasureSpec.EXACTLY),
             android.view.View.MeasureSpec.makeMeasureSpec(h, android.view.View.MeasureSpec.EXACTLY)
@@ -216,10 +280,17 @@ class BulletinPageLayout @JvmOverloads constructor(
     }
 
     fun drawForPdf(canvas: Canvas, width: Int, height: Int) {
-        measure(MeasureSpec.makeMeasureSpec(width, MeasureSpec.EXACTLY),
-            MeasureSpec.makeMeasureSpec(height, MeasureSpec.EXACTLY))
+        measure(
+            MeasureSpec.makeMeasureSpec(width, MeasureSpec.EXACTLY),
+            MeasureSpec.makeMeasureSpec(height, MeasureSpec.EXACTLY)
+        )
         layout(0, 0, width, height)
+
+        priceSticker.setPrintMode(true)
+        refusalSticker.setPrintMode(true)
         draw(canvas)
+        priceSticker.setPrintMode(false)
+        refusalSticker.setPrintMode(false)
     }
 
     data class StickerConfig(
@@ -227,62 +298,90 @@ class BulletinPageLayout @JvmOverloads constructor(
         val refusalX: Float, val refusalY: Float, val refusalScale: Float
     )
 
-    private inner class NoticeSticker(context: Context, private val refusalNotice: Boolean) : FrameLayout(context) {
+    private inner class NoticeSticker(
+        context: Context,
+        private val refusalNotice: Boolean
+    ) : FrameLayout(context) {
+
         var designX = 690f
         var designY = 548f
         var zoom = 1f
+
         val baseW = 360f
         val baseH = 100f
 
         private val editor = EditText(context)
-        private val moveHandle = android.widget.TextView(context)
-        private val resizeHandle = android.widget.TextView(context)
+        private val moveHandle = TextView(context)
+        private val resizeHandle = TextView(context)
+
         private var dragX = 0f
         private var dragY = 0f
         private var resizeStartY = 0f
         private var resizeStartZoom = 1f
+        private var printMode = false
 
         init {
             setWillNotDraw(false)
+
             val border = android.graphics.drawable.GradientDrawable().apply {
                 cornerRadius = 12f
-                setColor(if (refusalNotice) Color.rgb(255, 235, 240) else Color.rgb(255, 246, 215))
-                setStroke(3, if (refusalNotice) Color.rgb(220, 35, 55) else Color.rgb(190, 125, 15))
+                setColor(
+                    if (refusalNotice) Color.rgb(255, 235, 240)
+                    else Color.rgb(255, 246, 215)
+                )
+                setStroke(
+                    3,
+                    if (refusalNotice) Color.rgb(220, 35, 55)
+                    else Color.rgb(190, 125, 15)
+                )
             }
             background = border
             elevation = 8f
 
             editor.setText(defaultText())
-            editor.setTextColor(if (refusalNotice) Color.rgb(150, 20, 35) else Color.rgb(105, 75, 10))
+            editor.setTextColor(
+                if (refusalNotice) Color.rgb(150, 20, 35)
+                else Color.rgb(105, 75, 10)
+            )
             editor.textSize = 13f
             editor.typeface = Typeface.create("serif", Typeface.NORMAL)
             editor.gravity = Gravity.TOP or Gravity.START
-            editor.setPadding(12, 8, 38, 8)
+            editor.setPadding(12, 8, 58, 8)
             editor.background = null
             editor.isSingleLine = false
-            editor.maxLines = 5
-            editor.inputType = InputType.TYPE_CLASS_TEXT or InputType.TYPE_TEXT_FLAG_CAP_SENTENCES or InputType.TYPE_TEXT_FLAG_MULTI_LINE
+            editor.maxLines = 8
+            editor.inputType =
+                InputType.TYPE_CLASS_TEXT or
+                InputType.TYPE_TEXT_FLAG_CAP_SENTENCES or
+                InputType.TYPE_TEXT_FLAG_MULTI_LINE
             editor.setSelectAllOnFocus(false)
             addView(editor, LayoutParams(-1, -1))
 
             moveHandle.text = "✥"
-            moveHandle.textSize = 17f
+            moveHandle.textSize = 22f
             moveHandle.gravity = Gravity.CENTER
             moveHandle.setTextColor(Color.DKGRAY)
-            moveHandle.setBackgroundColor(Color.argb(35, 0, 0, 0))
-            addView(moveHandle, LayoutParams(34, 30, Gravity.TOP or Gravity.END))
+            moveHandle.setBackgroundColor(Color.argb(55, 0, 0, 0))
+            moveHandle.contentDescription = "تحريك الملصق"
+            addView(moveHandle, LayoutParams(52, 46, Gravity.TOP or Gravity.END))
+
             moveHandle.setOnTouchListener { _, event ->
                 when (event.actionMasked) {
                     MotionEvent.ACTION_DOWN -> {
-                        dragX = event.rawX; dragY = event.rawY
+                        bringToFront()
+                        dragX = event.rawX
+                        dragY = event.rawY
                         true
                     }
                     MotionEvent.ACTION_MOVE -> {
                         val s = this@BulletinPageLayout.measuredWidth / DESIGN_W
                         designX += (event.rawX - dragX) / s
                         designY += (event.rawY - dragY) / s
-                        dragX = event.rawX; dragY = event.rawY
-                        requestLayout(); invalidate(); true
+                        dragX = event.rawX
+                        dragY = event.rawY
+                        requestLayout()
+                        invalidate()
+                        true
                     }
                     MotionEvent.ACTION_UP, MotionEvent.ACTION_CANCEL -> true
                     else -> true
@@ -290,22 +389,32 @@ class BulletinPageLayout @JvmOverloads constructor(
             }
 
             resizeHandle.text = "↘"
-            resizeHandle.textSize = 18f
+            resizeHandle.textSize = 24f
             resizeHandle.gravity = Gravity.CENTER
             resizeHandle.setTextColor(Color.DKGRAY)
-            resizeHandle.setBackgroundColor(Color.argb(45, 0, 0, 0))
-            addView(resizeHandle, LayoutParams(34, 34, Gravity.BOTTOM or Gravity.END))
+            resizeHandle.setBackgroundColor(Color.argb(70, 0, 0, 0))
+            resizeHandle.contentDescription = "تكبير أو تصغير الملصق"
+            addView(
+                resizeHandle,
+                LayoutParams(56, 56, Gravity.BOTTOM or Gravity.END)
+            )
+
             resizeHandle.setOnTouchListener { _, event ->
                 when (event.actionMasked) {
                     MotionEvent.ACTION_DOWN -> {
+                        bringToFront()
                         resizeStartY = event.rawY
                         resizeStartZoom = zoom
                         true
                     }
                     MotionEvent.ACTION_MOVE -> {
-                        val delta = (event.rawY - resizeStartY) / 180f
-                        zoom = (resizeStartZoom + delta).coerceIn(0.55f, 2.4f)
-                        requestLayout(); invalidate(); true
+                        val s = this@BulletinPageLayout.measuredWidth / DESIGN_W
+                        val deltaDesign = (event.rawY - resizeStartY) / s
+                        zoom = (resizeStartZoom + deltaDesign / 140f)
+                            .coerceIn(0.45f, 4.0f)
+                        requestLayout()
+                        invalidate()
+                        true
                     }
                     MotionEvent.ACTION_UP, MotionEvent.ACTION_CANCEL -> true
                     else -> true
@@ -314,21 +423,32 @@ class BulletinPageLayout @JvmOverloads constructor(
         }
 
         private fun defaultText(): String =
-            if (refusalNotice)
-                "PRODUIT REFUSÉ À CAUSE DE :\\n................................................"
-            else
-                "PRIX À DÉBATTRE À ..........\\nÀ CAUSE DE : .................................\\n................................................"
+            if (refusalNotice) {
+                "PRODUIT REFUSÉ À CAUSE DE :\n................................................"
+            } else {
+                "PRIX À DÉBATTRE À ..........\nÀ CAUSE DE : .................................\n................................................"
+            }
 
         fun getTextValue(): String = editor.text.toString()
+
         fun setTextValue(value: String?) {
             if (!value.isNullOrBlank()) editor.setText(value)
+        }
+
+        fun setPrintMode(enabled: Boolean) {
+            printMode = enabled
+            moveHandle.visibility = if (enabled) GONE else VISIBLE
+            resizeHandle.visibility = if (enabled) GONE else VISIBLE
+            editor.isCursorVisible = !enabled
         }
     }
 
     private inner class PageCanvas(context: Context) : android.view.View(context) {
         private val p = Paint(Paint.ANTI_ALIAS_FLAG).apply { color = Color.BLACK }
         private val thin = Paint(Paint.ANTI_ALIAS_FLAG).apply {
-            color = Color.BLACK; style = Paint.Style.STROKE; strokeWidth = 1.4f
+            color = Color.BLACK
+            style = Paint.Style.STROKE
+            strokeWidth = 1.4f
         }
         private val bold = Typeface.create("serif", Typeface.BOLD)
         private val normal = Typeface.create("serif", Typeface.NORMAL)
@@ -336,18 +456,30 @@ class BulletinPageLayout @JvmOverloads constructor(
 
         override fun onDraw(canvas: Canvas) {
             val s = width / DESIGN_W
-            canvas.save(); canvas.scale(s, s); drawPage(canvas); canvas.restore()
+            canvas.save()
+            canvas.scale(s, s)
+            drawPage(canvas)
+            canvas.restore()
         }
 
-        private fun txt(c: Canvas, text: String, x: Float, y: Float, size: Float,
-                        align: Paint.Align = Paint.Align.LEFT, typeface: Typeface = normal) {
-            p.style = Paint.Style.FILL; p.textSize = size; p.textAlign = align; p.typeface = typeface
+        private fun txt(
+            c: Canvas, text: String, x: Float, y: Float, size: Float,
+            align: Paint.Align = Paint.Align.LEFT,
+            typeface: Typeface = normal
+        ) {
+            p.style = Paint.Style.FILL
+            p.textSize = size
+            p.textAlign = align
+            p.typeface = typeface
             c.drawText(text, x, y, p)
         }
 
-        private fun centered(c: Canvas, text: String, x: Float, y: Float, w: Float, size: Float,
-                             typeface: Typeface = normal) =
-            txt(c, text, x + w / 2f, y, size, Paint.Align.CENTER, typeface)
+        private fun centered(
+            c: Canvas, text: String, x: Float, y: Float, w: Float, size: Float,
+            typeface: Typeface = normal
+        ) = txt(
+            c, text, x + w / 2f, y, size, Paint.Align.CENTER, typeface
+        )
 
         private fun line(c: Canvas, x1: Float, y1: Float, x2: Float, y2: Float) =
             c.drawLine(x1, y1, x2, y2, thin)
@@ -357,101 +489,231 @@ class BulletinPageLayout @JvmOverloads constructor(
 
         private fun drawLogo(c: Canvas, cx: Float, cy: Float) {
             val bmp = CompanyLogo.bitmap() ?: return
-            val dst = android.graphics.RectF(cx - 48f, cy - 48f, cx + 48f, cy + 48f)
+            val dst = android.graphics.RectF(
+                cx - 48f, cy - 48f, cx + 48f, cy + 48f
+            )
             c.drawBitmap(bmp, null, dst, null)
         }
 
         private fun dotted(c: Canvas, x1: Float, y: Float, x2: Float) {
-            p.style = Paint.Style.STROKE; p.strokeWidth = 1.5f
+            p.style = Paint.Style.STROKE
+            p.strokeWidth = 1.5f
             var x = x1
-            while (x < x2) { c.drawLine(x, y, minOf(x + 4f, x2), y, p); x += 9f }
+            while (x < x2) {
+                c.drawLine(x, y, minOf(x + 4f, x2), y, p)
+                x += 9f
+            }
         }
 
         private fun drawPage(c: Canvas) {
             c.drawColor(Color.WHITE)
-            drawLogo(c, 70f, 55f); drawLogo(c, DESIGN_W - 70f, 55f)
-            centered(c, "OFFICE ALGERIEN INTERPROFESSIONNEL DES CEREALES", 115f, 78f, 1108f, 31f, bold)
-            centered(c, "Coopérative de Céréales et des Légumes Secs de BATNA", 170f, 142f, 998f, 28f, bold)
+            drawLogo(c, 70f, 55f)
+            drawLogo(c, DESIGN_W - 70f, 55f)
+
+            centered(
+                c,
+                "OFFICE ALGERIEN INTERPROFESSIONNEL DES CEREALES",
+                115f, 78f, 1108f, 31f, bold
+            )
+            centered(
+                c,
+                "Coopérative de Céréales et des Légumes Secs de BATNA",
+                170f, 142f, 998f, 28f, bold
+            )
             centered(c, "Bulletin d'Agréage", 330f, 205f, 678f, 38f, italic)
+
             txt(c, "Espèce :", 104f, 270f, 28f, Paint.Align.LEFT, bold)
             txt(c, "Blé Dur", 235f, 270f, 32f, Paint.Align.LEFT, italic)
             line(c, 230f, 276f, 365f, 276f)
-            txt(c, "Date :", 700f, 270f, 28f, Paint.Align.LEFT, bold); dotted(c, 805f, 270f, 1030f)
-            txt(c, "Nom du producteur :", 104f, 360f, 24f, Paint.Align.LEFT, bold); dotted(c, 380f, 360f, 535f)
-            txt(c, "Adresse :", 104f, 397f, 24f, Paint.Align.LEFT, bold); dotted(c, 250f, 397f, 535f)
-            txt(c, "Point de collecte :", 104f, 434f, 24f, Paint.Align.LEFT, bold); dotted(c, 340f, 434f, 535f)
-            txt(c, "Nom de l'agréeur :", 700f, 360f, 24f, Paint.Align.LEFT, bold); dotted(c, 940f, 360f, 1050f)
-            txt(c, "Quantité :", 700f, 397f, 24f, Paint.Align.LEFT, bold); dotted(c, 835f, 397f, 1010f)
-            txt(c, "N° Bon d'entrée:", 700f, 434f, 24f, Paint.Align.LEFT, bold); dotted(c, 885f, 434f, 1050f)
+
+            txt(c, "Date :", 700f, 270f, 28f, Paint.Align.LEFT, bold)
+            dotted(c, 805f, 270f, 1030f)
+
+            txt(c, "Nom du producteur :", 104f, 360f, 24f, Paint.Align.LEFT, bold)
+            dotted(c, 380f, 360f, 535f)
+
+            txt(c, "Adresse :", 104f, 397f, 24f, Paint.Align.LEFT, bold)
+            dotted(c, 250f, 397f, 535f)
+
+            txt(c, "Point de collecte :", 104f, 434f, 24f, Paint.Align.LEFT, bold)
+            dotted(c, 340f, 434f, 535f)
+
+            txt(c, "Nom de l'agréeur :", 700f, 360f, 24f, Paint.Align.LEFT, bold)
+            dotted(c, 940f, 360f, 1050f)
+
+            txt(c, "Quantité :", 700f, 397f, 24f, Paint.Align.LEFT, bold)
+            dotted(c, 835f, 397f, 1010f)
+
+            txt(c, "N° Bon d'entrée:", 700f, 434f, 24f, Paint.Align.LEFT, bold)
+            dotted(c, 885f, 434f, 1050f)
+
             drawTable(c)
-            txt(c, "Référence : Décret n°88-152 du 26 juillet 1988 fixant les barèmes de bonification et de réfaction", 104f, 1660f, 15f)
-            txt(c, "applicables aux céréales et aux légumes secs. 1ère partie : Relations entre producteurs et organismes stockeurs.", 104f, 1681f, 15f)
+
+            txt(
+                c,
+                "Référence : Décret n°88-152 du 26 juillet 1988 fixant les barèmes de bonification et de réfaction",
+                104f, 1660f, 15f
+            )
+            txt(
+                c,
+                "applicables aux céréales et aux légumes secs. 1ère partie : Relations entre producteurs et organismes stockeurs.",
+                104f, 1681f, 15f
+            )
             txt(c, "Producteur", 105f, 1740f, 22f, Paint.Align.LEFT, bold)
             txt(c, "N° de la carte d’identité", 105f, 1800f, 21f, Paint.Align.LEFT, bold)
             txt(c, "Agréeur", 1030f, 1740f, 22f, Paint.Align.CENTER, bold)
         }
 
         private fun drawTable(c: Canvas) {
-            val x0=102f; val x1=530f; val x2=653f; val x3=760f; val x4=927f; val x5=1063f; val x6=1155f
-            val ys = floatArrayOf(530f,638f,670f,710f,753f,828f,937f,1005f,1047f,1084f,1135f,1184f,1235f,1274f,1317f,1367f,1417f,1471f,1515f,1576f,1618f)
-            rect(c,x0,ys[0],x6,ys.last())
-            for (i in 1 until ys.size-1) line(c,x0,ys[i],x6,ys[i])
-            line(c,x1,ys[0],x1,ys.last()); line(c,x2,ys[0],x2,ys.last()); line(c,x3,ys[0],x3,ys.last())
-            line(c,x4,ys[0],x4,ys.last()); line(c,x5,ys[0],x5,ys.last())
-            centered(c,"Paramètres",x0,575f,x1-x0,24f,bold)
-            centered(c,"Limites",x1,557f,x2-x1,23f,bold); centered(c,"(sans",x1,582f,x2-x1,14f,bold)
-            centered(c,"bonification ni",x1,599f,x2-x1,14f,bold); centered(c,"réfaction)",x1,616f,x2-x1,14f,bold)
-            centered(c,"Valeurs",x2,575f,x3-x2,23f,bold)
-            centered(c,"Bonification",x3,560f,x4-x3,21f,bold); centered(c,"(D.A.)",x3,585f,x4-x3,19f,bold)
-            centered(c,"Réfaction",x4,560f,x5-x4,21f,bold); centered(c,"(D.A.)",x4,585f,x5-x4,19f,bold)
-            centered(c,"Observation",x5,575f,x6-x5,20f,bold)
-            row(c,638f,670f,"Poids spécifique (kg/hl)","[76 - 80]","poids")
-            row(c,670f,710f,"Teneur en eau (%)","≤ 17")
-            row(c,710f,753f,"Ergot (‰)","≤ 1")
-            vertical(c,"Impuretés 1ère catégorie",120f,752f,1005f)
-            multiline(c,"Matières qui passent à travers\nle tamis 20 mm x2.1mm (%)",145f,790f,19f,bold)
-            centered(c,"-",x1,805f,x2-x1,22f,bold)
-            multiline(c,"Les débris végétaux et les\néléments minéraux (%)\nRetenus par le tamis 20 mm x2.1mm",145f,870f,18f,bold)
-            centered(c,"-",x1,895f,x2-x1,22f,bold)
-            row(c,937f,1005f,"Graines nuisibles (%)","≤ 0,25",null)
-            row(c,1005f,1047f,"Total (%)","[1 - 3]","impur1")
-            vertical(c,"Impuretés 2ème catégorie",120f,1047f,1417f)
-            row(c,1047f,1084f,"Grains cassés (%)","≤ 5","casses")
-            row(c,1084f,1135f,"Grains fortement boutés (%)","≤ 5","boutes")
-            row(c,1135f,1184f,"Grains Roux (%)","-")
-            multiline(c,"Grains fortement mouchetés\n(%)",145f,1260f,18f,bold); centered(c,"-",x1,1270f,x2-x1,22f,bold)
-            row(c,1274f,1317f,"Grains punaisés (%)","-")
-            row(c,1317f,1367f,"Grains piqués (%)","-")
-            row(c,1367f,1417f,"Total (%)","≤ 10","impur2")
-            vertical(c,"Grains\nmitadinés",120f,1417f,1576f)
-            row(c,1417f,1471f,"Grains mitadinés (%)","-","mitadin")
-            row(c,1471f,1515f,"Blé tendre dans blé dur (%)","≤ 5","bleTendre")
-            row(c,1515f,1576f,"Total (%)","[10 - 20]","mitadin")
-            centered(c,"Total des Bonifications et Réfactions",x0,1603f,x2-x0,20f,bold)
-            if (bonus.isNotEmpty()) centered(c,bonus,x3,1603f,x4-x3,21f,bold)
-            if (refaction.isNotEmpty()) centered(c,refaction,x4,1603f,x5-x4,21f,bold)
-            if (bonus.isNotEmpty() || refaction.isNotEmpty()) centered(c,observation.take(16),x5,1603f,x6-x5,13f)
-        }
+            val x0 = 102f
+            val x1 = 530f
+            val x2 = 653f
+            val x3 = 760f
+            val x4 = 927f
+            val x5 = 1063f
+            val x6 = 1155f
 
-        private fun row(c:Canvas, top:Float, bottom:Float, label:String, limit:String, key:String? = null) {
-            val cy=(top+bottom)/2f+7f
-            txt(c,label,145f,cy,19f,Paint.Align.LEFT,bold)
-            centered(c,limit,530f,cy,123f,20f,bold)
-            key?.let {
-                val a=rowAdjustments[it] ?: return@let
-                if (a.bonification != 0.0) centered(c,String.format(Locale.FRANCE,"%.2f",a.bonification),760f,cy,167f,18f,bold)
-                if (a.refaction != 0.0) centered(c,String.format(Locale.FRANCE,"%.2f",a.refaction),927f,cy,136f,18f,bold)
+            val ys = floatArrayOf(
+                530f, 638f, 670f, 710f, 753f, 828f, 937f, 1005f,
+                1047f, 1084f, 1135f, 1184f, 1235f, 1274f, 1317f,
+                1367f, 1417f, 1471f, 1515f, 1576f, 1618f
+            )
+
+            rect(c, x0, ys[0], x6, ys.last())
+            for (i in 1 until ys.size - 1) {
+                line(c, x0, ys[i], x6, ys[i])
+            }
+
+            line(c, x1, ys[0], x1, ys.last())
+            line(c, x2, ys[0], x2, ys.last())
+            line(c, x3, ys[0], x3, ys.last())
+            line(c, x4, ys[0], x4, ys.last())
+            line(c, x5, ys[0], x5, ys.last())
+
+            centered(c, "Paramètres", x0, 575f, x1 - x0, 24f, bold)
+            centered(c, "Limites", x1, 557f, x2 - x1, 23f, bold)
+            centered(c, "(sans", x1, 582f, x2 - x1, 14f, bold)
+            centered(c, "bonification ni", x1, 599f, x2 - x1, 14f, bold)
+            centered(c, "réfaction)", x1, 616f, x2 - x1, 14f, bold)
+            centered(c, "Valeurs", x2, 575f, x3 - x2, 23f, bold)
+            centered(c, "Bonification", x3, 560f, x4 - x3, 21f, bold)
+            centered(c, "(D.A.)", x3, 585f, x4 - x3, 19f, bold)
+            centered(c, "Réfaction", x4, 560f, x5 - x4, 21f, bold)
+            centered(c, "(D.A.)", x4, 585f, x5 - x4, 19f, bold)
+            centered(c, "Observation", x5, 575f, x6 - x5, 20f, bold)
+
+            row(c, 638f, 670f, "Poids spécifique (kg/hl)", "[76 - 80]", "poids")
+            row(c, 670f, 710f, "Teneur en eau (%)", "≤ 17")
+            row(c, 710f, 753f, "Ergot (‰)", "≤ 1")
+
+            vertical(c, "Impuretés 1ère catégorie", 120f, 752f, 1005f)
+            multiline(c, "Matières qui passent à travers\nle tamis 20 mm x2.1mm (%)", 145f, 790f, 19f, bold)
+            centered(c, "-", x1, 805f, x2 - x1, 22f, bold)
+
+            multiline(
+                c,
+                "Les débris végétaux et les\néléments minéraux (%)\nRetenus par le tamis 20 mm x2.1mm",
+                145f, 870f, 18f, bold
+            )
+            centered(c, "-", x1, 895f, x2 - x1, 22f, bold)
+            row(c, 937f, 1005f, "Graines nuisibles (%)", "≤ 0,25")
+
+            row(c, 1005f, 1047f, "Total (%)", "[1 - 3]", "impur1")
+            vertical(c, "Impuretés 2ème catégorie", 120f, 1047f, 1417f)
+            row(c, 1047f, 1084f, "Grains cassés (%)", "≤ 5", "casses")
+            row(c, 1084f, 1135f, "Grains fortement boutés (%)", "≤ 5", "boutes")
+            row(c, 1135f, 1184f, "Grains Roux (%)", "-")
+
+            multiline(c, "Grains fortement mouchetés\n(%)", 145f, 1260f, 18f, bold)
+            centered(c, "-", x1, 1270f, x2 - x1, 22f, bold)
+            row(c, 1274f, 1317f, "Grains punaisés (%)", "-")
+            row(c, 1317f, 1367f, "Grains piqués (%)", "-")
+            row(c, 1367f, 1417f, "Total (%)", "≤ 10", "impur2")
+
+            vertical(c, "Grains\nmitadinés", 120f, 1417f, 1576f)
+            row(c, 1417f, 1471f, "Grains mitadinés (%)", "-", "mitadin")
+            row(c, 1471f, 1515f, "Blé tendre dans blé dur (%)", "≤ 5", "bleTendre")
+            row(c, 1515f, 1576f, "Total (%)", "[10 - 20]", "mitadin")
+
+            centered(
+                c,
+                "Total des Bonifications et Réfactions",
+                x0, 1603f, x2 - x0, 20f, bold
+            )
+            if (bonus.isNotEmpty()) {
+                centered(c, bonus, x3, 1603f, x4 - x3, 21f, bold)
+            }
+            if (refaction.isNotEmpty()) {
+                centered(c, refaction, x4, 1603f, x5 - x4, 21f, bold)
+            }
+            if (bonus.isNotEmpty() || refaction.isNotEmpty()) {
+                centered(c, observation.take(16), x5, 1603f, x6 - x5, 13f)
             }
         }
 
-        private fun multiline(c:Canvas,text:String,x:Float,y:Float,size:Float,typeface:Typeface) {
-            text.split("\n").forEachIndexed { i,s -> txt(c,s,x,y+i*(size+7f),size,Paint.Align.LEFT,typeface) }
+        private fun row(
+            c: Canvas,
+            top: Float,
+            bottom: Float,
+            label: String,
+            limit: String,
+            key: String? = null
+        ) {
+            val cy = (top + bottom) / 2f + 7f
+            txt(c, label, 145f, cy, 19f, Paint.Align.LEFT, bold)
+            centered(c, limit, 530f, cy, 123f, 20f, bold)
+
+            key?.let {
+                val a = rowAdjustments[it] ?: return@let
+                if (a.bonification != 0.0) {
+                    centered(
+                        c,
+                        String.format(Locale.FRANCE, "%.2f", a.bonification),
+                        760f, cy, 167f, 18f, bold
+                    )
+                }
+                if (a.refaction != 0.0) {
+                    centered(
+                        c,
+                        String.format(Locale.FRANCE, "%.2f", a.refaction),
+                        927f, cy, 136f, 18f, bold
+                    )
+                }
+            }
         }
 
-        private fun vertical(c:Canvas,text:String,cx:Float,top:Float,bottom:Float) {
-            c.save(); c.rotate(-90f,cx,(top+bottom)/2f)
-            text.split("\n").forEachIndexed { i,s ->
-                txt(c,s,cx,(top+bottom)/2f - (text.length*4f) + i*22f,20f,Paint.Align.CENTER,bold)
+        private fun multiline(
+            c: Canvas,
+            text: String,
+            x: Float,
+            y: Float,
+            size: Float,
+            typeface: Typeface
+        ) {
+            text.split("\n").forEachIndexed { i, s ->
+                txt(c, s, x, y + i * (size + 7f), size, Paint.Align.LEFT, typeface)
+            }
+        }
+
+        private fun vertical(
+            c: Canvas,
+            text: String,
+            cx: Float,
+            top: Float,
+            bottom: Float
+        ) {
+            c.save()
+            c.rotate(-90f, cx, (top + bottom) / 2f)
+            text.split("\n").forEachIndexed { i, s ->
+                txt(
+                    c,
+                    s,
+                    cx,
+                    (top + bottom) / 2f - (text.length * 4f) + i * 22f,
+                    20f,
+                    Paint.Align.CENTER,
+                    bold
+                )
             }
             c.restore()
         }
