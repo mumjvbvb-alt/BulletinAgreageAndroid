@@ -39,22 +39,22 @@ class BulletinPageLayout @JvmOverloads constructor(
         Spec(R.id.numeroBon, 705f, 438f, 335f, 38f),
         Spec(R.id.carteIdentite, 110f, 1778f, 360f, 40f),
         Spec(R.id.poidsSpecifique, 655f, 642f, 105f, 24f, true),
-        Spec(R.id.humidite, 655f, 678f, 105f, 24f, true),
-        Spec(R.id.ergot, 655f, 719f, 105f, 26f, true),
-        Spec(R.id.tamis, 655f, 765f, 105f, 48f, true),
-        Spec(R.id.debris, 655f, 852f, 105f, 48f, true),
-        Spec(R.id.grainesNuisibles, 655f, 949f, 105f, 30f, true),
-        Spec(R.id.impur1Total, 655f, 1012f, 105f, 28f, true, true),
-        Spec(R.id.grainsCasses, 655f, 1052f, 105f, 27f, true),
-        Spec(R.id.grainsBoutes, 655f, 1096f, 105f, 30f, true),
-        Spec(R.id.grainsRoux, 655f, 1146f, 105f, 28f, true),
-        Spec(R.id.grainsMouchetes, 655f, 1195f, 105f, 30f, true),
-        Spec(R.id.grainsPunaises, 655f, 1239f, 105f, 30f, true),
-        Spec(R.id.grainsPiques, 655f, 1282f, 105f, 28f, true),
-        Spec(R.id.impur2Total, 655f, 1378f, 105f, 28f, true, true),
-        Spec(R.id.mitadin, 655f, 1429f, 105f, 30f, true),
-        Spec(R.id.bleTendre, 655f, 1479f, 105f, 28f, true),
-        Spec(R.id.mitadinTotal, 655f, 1530f, 105f, 30f, true, true)
+        Spec(R.id.humidite, 655f, 674f, 105f, 32f, true),
+        Spec(R.id.ergot, 655f, 714f, 105f, 35f, true),
+        Spec(R.id.tamis, 655f, 758f, 105f, 65f, true),
+        Spec(R.id.debris, 655f, 833f, 105f, 99f, true),
+        Spec(R.id.grainesNuisibles, 655f, 941f, 105f, 60f, true),
+        Spec(R.id.impur1Total, 655f, 1009f, 105f, 34f, true, true),
+        Spec(R.id.grainsCasses, 655f, 1050f, 105f, 31f, true),
+        Spec(R.id.grainsBoutes, 655f, 1088f, 105f, 43f, true),
+        Spec(R.id.grainsRoux, 655f, 1139f, 105f, 41f, true),
+        Spec(R.id.grainsMouchetes, 655f, 1239f, 105f, 31f, true),
+        Spec(R.id.grainsPunaises, 655f, 1279f, 105f, 33f, true),
+        Spec(R.id.grainsPiques, 655f, 1322f, 105f, 41f, true),
+        Spec(R.id.impur2Total, 655f, 1372f, 105f, 32f, true, true),
+        Spec(R.id.mitadin, 655f, 1422f, 105f, 44f, true),
+        Spec(R.id.bleTendre, 655f, 1475f, 105f, 36f, true),
+        Spec(R.id.mitadinTotal, 655f, 1520f, 105f, 52f, true, true)
     )
 
     private val fields = mutableMapOf<Int, EditText>()
@@ -90,9 +90,9 @@ class BulletinPageLayout @JvmOverloads constructor(
         e.setTextColor(Color.BLACK)
         e.setHintTextColor(Color.TRANSPARENT)
         e.background = null
-        e.setPadding(2, 0, 2, 0)
+        e.setPadding(0, 0, 0, 0)
         e.gravity = Gravity.CENTER
-        e.textSize = if (s.numeric) 9f else 10f
+        e.textSize = if (s.numeric) 12f else 11f
         e.includeFontPadding = false
         e.maxLines = 1
         e.inputType = if (s.numeric)
@@ -116,9 +116,9 @@ class BulletinPageLayout @JvmOverloads constructor(
         currentImp1 = imp1
         currentImp2 = imp2
         updateNotices()
-        field(R.id.impur1Total).setText(String.format(Locale.FRANCE, "%.3f", imp1))
-        field(R.id.impur2Total).setText(String.format(Locale.FRANCE, "%.3f", imp2))
-        field(R.id.mitadinTotal).setText(String.format(Locale.FRANCE, "%.3f", mitadin))
+        field(R.id.impur1Total).setText(String.format(Locale.FRANCE, "%.2f", imp1))
+        field(R.id.impur2Total).setText(String.format(Locale.FRANCE, "%.2f", imp2))
+        field(R.id.mitadinTotal).setText(String.format(Locale.FRANCE, "%.2f", mitadin))
         page.invalidate()
     }
 
@@ -132,6 +132,9 @@ class BulletinPageLayout @JvmOverloads constructor(
         refusalSticker.designX, refusalSticker.designY, refusalSticker.zoom
     )
 
+    fun getPriceNoticeText(): String = priceSticker.getTextValue()
+    fun getRefusalNoticeText(): String = refusalSticker.getTextValue()
+
     fun applyStickerConfig(config: StickerConfig) {
         priceSticker.designX = config.priceX
         priceSticker.designY = config.priceY
@@ -141,6 +144,11 @@ class BulletinPageLayout @JvmOverloads constructor(
         refusalSticker.zoom = config.refusalScale
         requestLayout()
         invalidate()
+    }
+
+    fun setStickerTexts(price: String?, refusal: String?) {
+        priceSticker.setTextValue(price)
+        refusalSticker.setTextValue(refusal)
     }
 
     private fun updateNotices() {
@@ -200,6 +208,10 @@ class BulletinPageLayout @JvmOverloads constructor(
         val h = (sticker.baseH * sticker.zoom * scale).roundToInt()
         val x = (sticker.designX * scale).roundToInt()
         val y = (sticker.designY * scale).roundToInt()
+        sticker.measure(
+            android.view.View.MeasureSpec.makeMeasureSpec(w, android.view.View.MeasureSpec.EXACTLY),
+            android.view.View.MeasureSpec.makeMeasureSpec(h, android.view.View.MeasureSpec.EXACTLY)
+        )
         sticker.layout(x, y, x + w, y + h)
     }
 
@@ -215,84 +227,101 @@ class BulletinPageLayout @JvmOverloads constructor(
         val refusalX: Float, val refusalY: Float, val refusalScale: Float
     )
 
-    private inner class NoticeSticker(context: Context, private val refusalNotice: Boolean) : android.view.View(context) {
+    private inner class NoticeSticker(context: Context, private val refusalNotice: Boolean) : FrameLayout(context) {
         var designX = 690f
         var designY = 548f
         var zoom = 1f
         val baseW = 360f
         val baseH = 100f
-        private var lastRawX = 0f
-        private var lastRawY = 0f
-        private val scaleDetector = ScaleGestureDetector(context, object : ScaleGestureDetector.SimpleOnScaleGestureListener() {
-            override fun onScale(detector: ScaleGestureDetector): Boolean {
-                zoom = (zoom * detector.scaleFactor).coerceIn(0.55f, 2.2f)
-                requestLayout()
-                invalidate()
-                return true
-            }
-        })
 
-        override fun onTouchEvent(event: MotionEvent): Boolean {
-            scaleDetector.onTouchEvent(event)
-            val parentScale = if (this@BulletinPageLayout.measuredWidth == 0) 1f
-                else this@BulletinPageLayout.measuredWidth / DESIGN_W
-            when (event.actionMasked) {
-                MotionEvent.ACTION_DOWN -> {
-                    lastRawX = event.rawX
-                    lastRawY = event.rawY
-                    parent.requestDisallowInterceptTouchEvent(true)
-                    return true
-                }
-                MotionEvent.ACTION_MOVE -> {
-                    if (!scaleDetector.isInProgress && event.pointerCount == 1) {
-                        designX += (event.rawX - lastRawX) / parentScale
-                        designY += (event.rawY - lastRawY) / parentScale
-                        lastRawX = event.rawX
-                        lastRawY = event.rawY
-                        requestLayout()
-                        invalidate()
+        private val editor = EditText(context)
+        private val moveHandle = android.widget.TextView(context)
+        private val resizeHandle = android.widget.TextView(context)
+        private var dragX = 0f
+        private var dragY = 0f
+        private var resizeStartY = 0f
+        private var resizeStartZoom = 1f
+
+        init {
+            setWillNotDraw(false)
+            val border = android.graphics.drawable.GradientDrawable().apply {
+                cornerRadius = 12f
+                setColor(if (refusalNotice) Color.rgb(255, 235, 240) else Color.rgb(255, 246, 215))
+                setStroke(3, if (refusalNotice) Color.rgb(220, 35, 55) else Color.rgb(190, 125, 15))
+            }
+            background = border
+            elevation = 8f
+
+            editor.setText(defaultText())
+            editor.setTextColor(if (refusalNotice) Color.rgb(150, 20, 35) else Color.rgb(105, 75, 10))
+            editor.textSize = 13f
+            editor.typeface = Typeface.create("serif", Typeface.NORMAL)
+            editor.gravity = Gravity.TOP or Gravity.START
+            editor.setPadding(12, 8, 38, 8)
+            editor.background = null
+            editor.isSingleLine = false
+            editor.maxLines = 5
+            editor.inputType = InputType.TYPE_CLASS_TEXT or InputType.TYPE_TEXT_FLAG_CAP_SENTENCES or InputType.TYPE_TEXT_FLAG_MULTI_LINE
+            editor.setSelectAllOnFocus(false)
+            addView(editor, LayoutParams(-1, -1))
+
+            moveHandle.text = "✥"
+            moveHandle.textSize = 17f
+            moveHandle.gravity = Gravity.CENTER
+            moveHandle.setTextColor(Color.DKGRAY)
+            moveHandle.setBackgroundColor(Color.argb(35, 0, 0, 0))
+            addView(moveHandle, LayoutParams(34, 30, Gravity.TOP or Gravity.END))
+            moveHandle.setOnTouchListener { _, event ->
+                when (event.actionMasked) {
+                    MotionEvent.ACTION_DOWN -> {
+                        dragX = event.rawX; dragY = event.rawY
+                        true
                     }
-                    return true
-                }
-                MotionEvent.ACTION_UP, MotionEvent.ACTION_CANCEL -> {
-                    parent.requestDisallowInterceptTouchEvent(false)
-                    performClick()
-                    return true
+                    MotionEvent.ACTION_MOVE -> {
+                        val s = this@BulletinPageLayout.measuredWidth / DESIGN_W
+                        designX += (event.rawX - dragX) / s
+                        designY += (event.rawY - dragY) / s
+                        dragX = event.rawX; dragY = event.rawY
+                        requestLayout(); invalidate(); true
+                    }
+                    MotionEvent.ACTION_UP, MotionEvent.ACTION_CANCEL -> true
+                    else -> true
                 }
             }
-            return true
-        }
 
-        override fun performClick(): Boolean {
-            super.performClick()
-            return true
-        }
-
-        override fun onDraw(c: Canvas) {
-            super.onDraw(c)
-            val p = Paint(Paint.ANTI_ALIAS_FLAG)
-            p.style = Paint.Style.FILL
-            p.color = if (refusalNotice) Color.rgb(255, 235, 240) else Color.rgb(255, 246, 215)
-            c.drawRoundRect(4f, 4f, width - 4f, height - 4f, 12f, 12f, p)
-            p.style = Paint.Style.STROKE
-            p.strokeWidth = 3f
-            p.color = if (refusalNotice) Color.rgb(220, 35, 55) else Color.rgb(190, 125, 15)
-            c.drawRoundRect(4f, 4f, width - 4f, height - 4f, 12f, 12f, p)
-            p.style = Paint.Style.FILL
-            p.color = if (refusalNotice) Color.rgb(205, 25, 45) else Color.rgb(120, 85, 10)
-            p.textAlign = Paint.Align.LEFT
-            p.typeface = Typeface.create("serif", Typeface.BOLD)
-            p.textSize = 18f
-            val title = if (refusalNotice) "PRODUIT REFUSÉ À CAUSE DE :" else "PRIX À DÉBATTRE À .........."
-            c.drawText(title, 18f, 31f, p)
-            p.typeface = Typeface.create("serif", Typeface.NORMAL)
-            p.textSize = 17f
-            if (refusalNotice) {
-                c.drawText("................................................", 18f, 61f, p)
-            } else {
-                c.drawText("À CAUSE DE : .................................", 18f, 61f, p)
-                c.drawText("................................................", 18f, 86f, p)
+            resizeHandle.text = "↘"
+            resizeHandle.textSize = 18f
+            resizeHandle.gravity = Gravity.CENTER
+            resizeHandle.setTextColor(Color.DKGRAY)
+            resizeHandle.setBackgroundColor(Color.argb(45, 0, 0, 0))
+            addView(resizeHandle, LayoutParams(34, 34, Gravity.BOTTOM or Gravity.END))
+            resizeHandle.setOnTouchListener { _, event ->
+                when (event.actionMasked) {
+                    MotionEvent.ACTION_DOWN -> {
+                        resizeStartY = event.rawY
+                        resizeStartZoom = zoom
+                        true
+                    }
+                    MotionEvent.ACTION_MOVE -> {
+                        val delta = (event.rawY - resizeStartY) / 180f
+                        zoom = (resizeStartZoom + delta).coerceIn(0.55f, 2.4f)
+                        requestLayout(); invalidate(); true
+                    }
+                    MotionEvent.ACTION_UP, MotionEvent.ACTION_CANCEL -> true
+                    else -> true
+                }
             }
+        }
+
+        private fun defaultText(): String =
+            if (refusalNotice)
+                "PRODUIT REFUSÉ À CAUSE DE :\\n................................................"
+            else
+                "PRIX À DÉBATTRE À ..........\\nÀ CAUSE DE : .................................\\n................................................"
+
+        fun getTextValue(): String = editor.text.toString()
+        fun setTextValue(value: String?) {
+            if (!value.isNullOrBlank()) editor.setText(value)
         }
     }
 
@@ -410,8 +439,8 @@ class BulletinPageLayout @JvmOverloads constructor(
             centered(c,limit,530f,cy,123f,20f,bold)
             key?.let {
                 val a=rowAdjustments[it] ?: return@let
-                if (a.bonification != 0.0) centered(c,String.format(Locale.FRANCE,"%.3f",a.bonification),760f,cy,167f,18f,bold)
-                if (a.refaction != 0.0) centered(c,String.format(Locale.FRANCE,"%.3f",a.refaction),927f,cy,136f,18f,bold)
+                if (a.bonification != 0.0) centered(c,String.format(Locale.FRANCE,"%.2f",a.bonification),760f,cy,167f,18f,bold)
+                if (a.refaction != 0.0) centered(c,String.format(Locale.FRANCE,"%.2f",a.refaction),927f,cy,136f,18f,bold)
             }
         }
 
