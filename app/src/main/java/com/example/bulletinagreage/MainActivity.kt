@@ -97,7 +97,8 @@ class MainActivity : Activity() {
         statut.selectedItemPosition == 2,
         page.getStickerConfig(),
         page.getPriceNoticeText(),
-        page.getRefusalNoticeText()
+        page.getRefusalNoticeText(),
+        page.getInputFontSize()
     )
 
     private fun text(id: Int) = findViewById<EditText>(id).text.toString().trim()
