@@ -697,8 +697,7 @@ class BulletinPageLayout @JvmOverloads constructor(
         ) {
             c.save()
             c.rotate(-90f, cx, (top + bottom) / 2f)
-            text.split("
-").forEachIndexed { i, s ->
+            text.split("\n").forEachIndexed { i, s ->
                 txt(
                     c,
                     s,
