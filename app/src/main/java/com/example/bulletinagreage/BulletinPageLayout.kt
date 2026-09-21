@@ -66,6 +66,7 @@ class BulletinPageLayout @JvmOverloads constructor(
     private var currentImp1 = 0.0
     private var currentImp2 = 0.0
     private var refused = false
+    private var inputFontSp = 10f
 
     private val page = PageCanvas(context)
     private val priceSticker = NoticeSticker(context, false)
@@ -110,7 +111,7 @@ class BulletinPageLayout @JvmOverloads constructor(
         // Keep every entered value strictly inside its dotted field.
         // The text automatically shrinks when the value is longer than the field.
         val topField = topTextFields.contains(s.id)
-        e.textSize = if (topField) 10f else 10f
+        e.textSize = inputFontSp
         e.includeFontPadding = false
         e.maxLines = 1
         e.isSingleLine = true
@@ -119,8 +120,8 @@ class BulletinPageLayout @JvmOverloads constructor(
 
         if (android.os.Build.VERSION.SDK_INT >= 26) {
             e.setAutoSizeTextTypeUniformWithConfiguration(
-                if (topField) 6 else 6,
-                if (topField) 10 else 10,
+                6,
+                inputFontSp.toInt().coerceIn(6, 14),
                 1,
                 android.util.TypedValue.COMPLEX_UNIT_SP
             )
@@ -142,6 +143,25 @@ class BulletinPageLayout @JvmOverloads constructor(
     }
 
     fun field(id: Int): EditText = fields[id]!!
+
+    fun setInputFontSize(sp: Float) {
+        inputFontSp = sp.coerceIn(6f, 14f)
+        fields.values.forEach { field ->
+            field.setTextSize(android.util.TypedValue.COMPLEX_UNIT_SP, inputFontSp)
+            if (android.os.Build.VERSION.SDK_INT >= 26) {
+                field.setAutoSizeTextTypeUniformWithConfiguration(
+                    6,
+                    inputFontSp.toInt(),
+                    1,
+                    android.util.TypedValue.COMPLEX_UNIT_SP
+                )
+            }
+        }
+        requestLayout()
+        invalidate()
+    }
+
+    fun getInputFontSize(): Float = inputFontSp
 
     private fun fitTextFallback(field: EditText) {
         val available = (field.measuredWidth - field.paddingLeft - field.paddingRight)
