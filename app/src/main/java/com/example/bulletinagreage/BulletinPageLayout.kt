@@ -29,12 +29,6 @@ class BulletinPageLayout @JvmOverloads constructor(
         val numeric: Boolean = false, val readOnly: Boolean = false
     )
 
-    /*
-     * These coordinates deliberately follow the printed dotted lines.
-     * The previous version placed the top EditTexts below/away from the
-     * actual lines, which made names, address, collection point, etc.
-     * look as if they were entered in the wrong place.
-     */
     private val specs = listOf(
         Spec(R.id.date, 805f, 246f, 225f, 30f),
         Spec(R.id.producteur, 380f, 336f, 155f, 30f),
@@ -116,7 +110,6 @@ class BulletinPageLayout @JvmOverloads constructor(
         e.includeFontPadding = false
         e.maxLines = 1
         e.isSingleLine = true
-        e.horizontallyScrolling = true
         e.inputType = if (s.numeric) {
             InputType.TYPE_CLASS_NUMBER or InputType.TYPE_NUMBER_FLAG_DECIMAL
         } else {
@@ -424,9 +417,12 @@ class BulletinPageLayout @JvmOverloads constructor(
 
         private fun defaultText(): String =
             if (refusalNotice) {
-                "PRODUIT REFUSÉ À CAUSE DE :\n................................................"
+                "PRODUIT REFUSÉ À CAUSE DE :
+................................................"
             } else {
-                "PRIX À DÉBATTRE À ..........\nÀ CAUSE DE : .................................\n................................................"
+                "PRIX À DÉBATTRE À ..........
+À CAUSE DE : .................................
+................................................"
             }
 
         fun getTextValue(): String = editor.text.toString()
@@ -690,7 +686,8 @@ class BulletinPageLayout @JvmOverloads constructor(
             size: Float,
             typeface: Typeface
         ) {
-            text.split("\n").forEachIndexed { i, s ->
+            text.split("
+").forEachIndexed { i, s ->
                 txt(c, s, x, y + i * (size + 7f), size, Paint.Align.LEFT, typeface)
             }
         }
@@ -704,7 +701,8 @@ class BulletinPageLayout @JvmOverloads constructor(
         ) {
             c.save()
             c.rotate(-90f, cx, (top + bottom) / 2f)
-            text.split("\n").forEachIndexed { i, s ->
+            text.split("
+").forEachIndexed { i, s ->
                 txt(
                     c,
                     s,
