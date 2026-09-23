@@ -6,6 +6,7 @@ from PySide6.QtGui import QFont, QAction
 from PySide6.QtWidgets import *
 from database import Database
 from invoice_engine import SPECIES,RULES,calculate,num,fmt
+import renderer
 from renderer import InvoicePreview
 
 ROOT=Path.home()/"Documents"/"Bulletin d’Agréage"
@@ -19,7 +20,7 @@ class LayoutDialog(QDialog):
         self.x=QDoubleSpinBox(); self.x.setRange(0,1338); self.y=QDoubleSpinBox(); self.y.setRange(0,1900); self.font=QDoubleSpinBox(); self.font.setRange(6,30); self.font.setSingleStep(.5)
         for w in (self.x,self.y,self.font):w.setDecimals(1)
         lay.addRow("Champ",self.field); lay.addRow("Position X",self.x); lay.addRow("Position Y",self.y); lay.addRow("Taille du texte",self.font)
-        buttons=QHBoxLayout(); up=QPushButton("↑"); dn=QPushButton("↓"); lf=QPushButton("←"); rt=QPushButton("→")
+        buttons=QHBoxLayout(); up=QPushButton("Haut"); dn=QPushButton("Bas"); lf=QPushButton("Gauche"); rt=QPushButton("Droite")
         for b in (up,dn,lf,rt):buttons.addWidget(b)
         lay.addRow("Déplacement",buttons)
         reset=QPushButton("Réinitialiser la mise en page"); reset.clicked.connect(preview.reset_layout)
@@ -118,7 +119,7 @@ class MainWindow(QMainWindow):
         self.point=QLineEdit(); f.addRow("Point de collecte",self.point); self.bon=QLineEdit(); self.bon.setPlaceholderText("Automatique"); f.addRow("N° Bon d’entrée",self.bon)
         self.status=QComboBox(); self.status.addItems(["ACCEPTED","REFUSED"]); f.addRow("Décision",self.status)
         self.reason=QComboBox(); self.reason.setEditable(True); f.addRow("Cause du refus",self.reason)
-        lay.addWidget(box); self.analysis=QGroupBox("Analyses — entrer les Valeurs uniquement"); self.af=QFormLayout(self.analysis); lay.addWidget(self.analysis)
+        lay.addWidget(box); self.analysis=QGroupBox("Analyses — entrer les Valeurs uniquement"); self.af=QGridLayout(self.analysis); self.af.setColumnStretch(0,4); self.af.setColumnStretch(1,2); self.af.setColumnStretch(2,1); self.af.setColumnStretch(3,2); lay.addWidget(self.analysis)
         self.notice=QLabel(); self.notice.setWordWrap(True); lay.addWidget(self.notice)
         row=QHBoxLayout(); reset=QPushButton("Réinitialiser"); save=QPushButton("Enregistrer"); pdf=QPushButton("Exporter PDF"); hist=QPushButton("Historique")
         for b,fn in [(reset,self.reset_analysis),(save,self.save_invoice),(pdf,self.export_pdf),(hist,self.history)]:b.clicked.connect(fn);row.addWidget(b)
@@ -126,12 +127,27 @@ class MainWindow(QMainWindow):
         self.species.currentTextChanged.connect(self.rebuild_analysis); self.producer.currentTextChanged.connect(self.producer_changed); self.status.currentTextChanged.connect(self.changed); self.reason.currentTextChanged.connect(self.changed)
         return root
     def rebuild_analysis(self,*_):
-        while self.af.rowCount():self.af.removeRow(0)
+        while self.af.count():
+            item=self.af.takeAt(0)
+            if item.widget(): item.widget().deleteLater()
         self.analysis_fields={}
-        for r in RULES[self.species.currentText()]:
-            e=QLineEdit(); e.setPlaceholderText(f"{r.unit}"); e.setAlignment(Qt.AlignCenter); e.textChanged.connect(self.changed)
-            ref=QLabel(r.reference); ref.setStyleSheet("color:#555"); self.analysis_fields[r.key]=e; self.af.addRow(r.label,e); self.af.addRow("Valeur de référence",ref)
+        headers=("Paramètre","Valeur","Unité","Valeur de référence / Limite")
+        for col,h in enumerate(headers):
+            lab=QLabel(h); lab.setStyleSheet("font-weight:600; padding:4px;")
+            self.af.addWidget(lab,0,col)
+        for row,r in enumerate(RULES[self.species.currentText()],1):
+            lab=QLabel(r.label); lab.setWordWrap(True); self.af.addWidget(lab,row,0)
+            e=QLineEdit(); e.setPlaceholderText("0,00"); e.setAlignment(Qt.AlignCenter); e.setMinimumWidth(82)
+            e.textChanged.connect(self.changed); e.editingFinished.connect(lambda e=e:self.normalize_analysis(e))
+            self.analysis_fields[r.key]=e; self.af.addWidget(e,row,1)
+            unit=QLabel(r.unit); unit.setAlignment(Qt.AlignCenter); self.af.addWidget(unit,row,2)
+            ref=QLabel(r.reference); ref.setAlignment(Qt.AlignCenter); ref.setStyleSheet("color:#555;")
+            self.af.addWidget(ref,row,3)
         self.update_preview()
+
+    def normalize_analysis(self,e):
+        v=num(e.text())
+        if v is not None:e.setText(fmt(v))
     def producer_changed(self,*_):
         name=self.producer.currentText()
         for r in self.db.producers():
@@ -270,7 +286,7 @@ class MainWindow(QMainWindow):
 
 def main():
     from PySide6.QtWidgets import QApplication
-    app=QApplication(sys.argv); app.setStyle("Fusion"); app.setFont(QFont())
+    app=QApplication(sys.argv); app.setStyle("Fusion"); renderer.ensure_qt_font(); app.setFont(QFont(renderer.UI_FONT,10))
     app.setStyleSheet("""
         QWidget { font-size: 10pt; }
         QGroupBox { font-weight: 600; border: 1px solid #b9b9b9; border-radius: 5px; margin-top: 10px; padding-top: 8px; }
