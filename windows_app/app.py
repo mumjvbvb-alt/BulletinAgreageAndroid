@@ -112,7 +112,7 @@ class MainWindow(QMainWindow):
         root=QWidget(); out=QVBoxLayout(root); scroll=QScrollArea(); scroll.setWidgetResizable(True); body=QWidget(); lay=QVBoxLayout(body)
         box=QGroupBox("Données de la facture"); f=QFormLayout(box)
         self.species=QComboBox(); self.species.addItems(SPECIES); f.addRow("Espèce",self.species)
-        self.date=QLineEdit(QDate.currentDate().toString("dd/MM/yyyy")); self.date.setPlaceholderText("JJ/MM/AAAA"); f.addRow("Date",self.date)
+        self.date=QLineEdit(__import__("datetime").date.today().strftime("%d/%m/%Y")); self.date.setPlaceholderText("JJ/MM/AAAA"); f.addRow("Date",self.date)
         self.producer=QComboBox(); self.producer.setEditable(True); f.addRow("Nom du producteur",self.producer)
         self.address=QLineEdit(); f.addRow("Adresse",self.address); self.idcard=QLineEdit(); f.addRow("N° carte d’identité",self.idcard)
         self.agreer=QLineEdit(); f.addRow("Nom de l’agréeur",self.agreer); self.quantity=QLineEdit(); self.quantity.setPlaceholderText("0,00"); f.addRow("Quantité (Qx)",self.quantity)
