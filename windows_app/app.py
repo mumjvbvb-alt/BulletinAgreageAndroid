@@ -88,11 +88,11 @@ class MainWindow(QMainWindow):
     def __init__(self):
         super().__init__(); ROOT.mkdir(parents=True,exist_ok=True); PDF_ROOT.mkdir(parents=True,exist_ok=True); BACKUP_ROOT.mkdir(parents=True,exist_ok=True)
         self.db=Database(ROOT/"bulletin.db"); self.invoice_id=None; self.last_saved=None; self.setWindowTitle("Bulletin d’Agréage — Professionnel"); self.resize(1600,950)
-        self.build(); self.new_invoice(); self.daily_backup()
+        self.build(); self.load_producers(); self.load_reasons(); self.new_invoice(); self.daily_backup()
         self.timer=QTimer(self); self.timer.timeout.connect(self.autosave); self.timer.start(30000)
     def build(self):
         mb=self.menuBar(); fm=mb.addMenu("Fichier")
-        for label,fn in [("Nouvelle facture",self.new_invoice),("Historique",self.history),("Exporter PDF",self.export_pdf),("Imprimer",self.print_invoice),("Quitter",self.close)]:a=QAction(label,self);a.triggered.connect(fn);fm.addAction(a)
+        for label,fn in [("Nouvelle facture",self.new_invoice),("Historique",self.history),("Annuler les modifications",self.revert_saved),("Exporter PDF",self.export_pdf),("Imprimer",self.print_invoice),("Quitter",self.close)]:a=QAction(label,self);a.triggered.connect(fn);fm.addAction(a)
         tools=mb.addMenu("Outils"); a=QAction("Modifier la mise en page",self);a.triggered.connect(self.edit_layout);tools.addAction(a); a=QAction("Réinitialiser la mise en page",self);a.triggered.connect(self.reset_layout);tools.addAction(a)
         settings=QAction("Paramètres",self);settings.triggered.connect(self.settings);mb.addAction(settings)
         splitter=QSplitter(Qt.Horizontal); splitter.addWidget(self.input_panel()); self.preview=InvoicePreview(); splitter.addWidget(self.preview); splitter.setSizes([500,1050]); self.setCentralWidget(splitter)
@@ -138,13 +138,13 @@ class MainWindow(QMainWindow):
     def new_invoice(self):
         self.invoice_id=None; self.species.setCurrentText("Blé Dur"); self.rebuild_analysis(); self.date.setDate(__import__("PySide6").QtCore.QDate.currentDate())
         self.bon.setText(str(self.db.next_bon())); self.producer.setCurrentText(""); self.address.clear(); self.idcard.clear(); self.agreer.setText(self.db.setting("agreer","")); self.quantity.clear(); self.point.setText(self.db.setting("collection_point","")); self.status.setCurrentText("ACCEPTED"); self.reason.clear(); self.preview.reset_layout(); self.preview.set_data(self.collect(),calculate(self.species.currentText(),{}))
-    def reset_analysis(self):
+    def load_producers(self):\n        self.producer.blockSignals(True); self.producer.clear(); self.producer.addItem("")\n        for r in self.db.producers(): self.producer.addItem(r["name"])\n        self.producer.blockSignals(False)\n    def load_reasons(self):\n        self.reason.clear(); self.reason.addItems(self.db.reasons("REFUSED"))\n    def revert_saved(self):\n        if not self.last_saved:\n            QMessageBox.information(self,"Annuler","Aucune version enregistrée à restaurer."); return\n        d=self.last_saved; self.species.setCurrentText(d["species"]); self.producer.setCurrentText(d["producer"]); self.address.setText(d["address"]); self.idcard.setText(d["producer_id"]); self.agreer.setText(d["agreer"]); self.quantity.setText(fmt(d["quantity_qx"])); self.point.setText(d["point"]); self.bon.setText(str(d["bon_number"])); self.status.setCurrentText(d["status"]); self.reason.setCurrentText(d["reason"]);\n        for k,e in self.analysis_fields.items(): e.setText(str(d["values"].get(k,"")))\n        self.update_preview()\n    def reset_analysis(self):
         if QMessageBox.question(self,"Confirmation","Voulez-vous vraiment réinitialiser les valeurs d’analyse ?",QMessageBox.Yes|QMessageBox.No)!=QMessageBox.Yes:return
         for e in self.analysis_fields.values():e.clear()
     def save_invoice(self):
         d=self.collect()
         if not d["producer"].strip():QMessageBox.warning(self,"Validation","Veuillez saisir le nom du producteur.");return
-        try:self.invoice_id=self.db.save_invoice(d,self.invoice_id); self.db.save_producer(d["producer"],d["address"],d["producer_id"]); self.last_saved=d.copy(); QMessageBox.information(self,"Enregistrer","Facture enregistrée avec succès.")
+        try:\n            self.invoice_id=self.db.save_invoice(d,self.invoice_id); self.db.save_producer(d["producer"],d["address"],d["producer_id"]);\n            if d["status"]=="REFUSED" and d["reason"].strip(): self.db.add_reason("REFUSED",d["reason"]); self.load_producers(); self.load_reasons()\n            self.last_saved=d.copy(); QMessageBox.information(self,"Enregistrer","Facture enregistrée avec succès.")
         except sqlite3.IntegrityError: QMessageBox.warning(self,"N° Bon","Ce N° Bon existe déjà.")
     def load_invoice(self,i,duplicate=False):
         d=self.db.get_invoice(i)
@@ -156,7 +156,7 @@ class MainWindow(QMainWindow):
         h=HistoryDialog(self.db,self)
         if h.exec()==QDialog.Accepted and h.selected:self.load_invoice(h.selected[1],h.selected[0]=="duplicate")
     def edit_layout(self):
-        self.preview.edit_mode=True; d=LayoutDialog(self.preview,self); d.exec(); self.preview.edit_mode=False; self.update_preview()
+        self.preview.edit_mode=True; old=dict(self.preview.edits); d=LayoutDialog(self.preview,self); result=d.exec();\n        if result==QDialog.Rejected:self.preview.edits=old; self.preview.rebuild_fields()\n        else:\n            if self.invoice_id:self.save_invoice()\n        self.preview.edit_mode=False; self.update_preview()
     def reset_layout(self):
         if QMessageBox.question(self,"Confirmation","Réinitialiser la mise en page de tous les champs ?",QMessageBox.Yes|QMessageBox.No)==QMessageBox.Yes:self.preview.reset_layout();self.update_preview()
     def export_pdf(self):
