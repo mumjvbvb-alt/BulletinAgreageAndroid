@@ -112,7 +112,7 @@ class MainWindow(QMainWindow):
         root=QWidget(); out=QVBoxLayout(root); scroll=QScrollArea(); scroll.setWidgetResizable(True); body=QWidget(); lay=QVBoxLayout(body)
         box=QGroupBox("Données de la facture"); f=QFormLayout(box)
         self.species=QComboBox(); self.species.addItems(SPECIES); f.addRow("Espèce",self.species)
-        self.date=QDateEdit(); self.date.setCalendarPopup(True); self.date.setDate(QDate.currentDate()); self.date.lineEdit().setFont(QFont(renderer.UI_FONT,10)); f.addRow("Date",self.date)
+        self.date=QLineEdit(QDate.currentDate().toString("dd/MM/yyyy")); self.date.setPlaceholderText("JJ/MM/AAAA"); f.addRow("Date",self.date)
         self.producer=QComboBox(); self.producer.setEditable(True); f.addRow("Nom du producteur",self.producer)
         self.address=QLineEdit(); f.addRow("Adresse",self.address); self.idcard=QLineEdit(); f.addRow("N° carte d’identité",self.idcard)
         self.agreer=QLineEdit(); f.addRow("Nom de l’agréeur",self.agreer); self.quantity=QLineEdit(); self.quantity.setPlaceholderText("0,00"); f.addRow("Quantité (Qx)",self.quantity)
@@ -163,7 +163,7 @@ class MainWindow(QMainWindow):
         raw_bon=(self.bon.text() or "").strip()
         try: bon=int(raw_bon) if raw_bon else self.db.next_bon()
         except ValueError: bon=self.db.next_bon()
-        return {"species":self.species.currentText(),"date":self.date.date().toString("dd/MM/yyyy"),
+        return {"species":self.species.currentText(),"date":self.date.text().strip(),
                 "producer":self.producer.currentText(),"address":self.address.text(),"producer_id":self.idcard.text(),
                 "agreer":self.agreer.text(),"quantity_qx":num(self.quantity.text()),"point":self.point.text(),
                 "bon_number":bon,"status":self.status.currentText(),"reason":self.reason.currentText(),
@@ -175,7 +175,7 @@ class MainWindow(QMainWindow):
         self.notice.setText(("PRIX À DÉBATTRE" if res.price_to_discuss else "")+((" — "+res.observation) if res.observation else ""))
     def new_invoice(self,clear_draft=True):
         if clear_draft: self.remove_draft()
-        self.invoice_id=None; self.species.setCurrentText("Blé Dur"); self.rebuild_analysis(); self.date.setDate(__import__("PySide6").QtCore.QDate.currentDate())
+        self.invoice_id=None; self.species.setCurrentText("Blé Dur"); self.rebuild_analysis(); self.date.setText(QDate.currentDate().toString("dd/MM/yyyy"))
         self.bon.setText(str(self.db.next_bon())); self.producer.setCurrentText(""); self.address.clear(); self.idcard.clear(); self.agreer.setText(self.db.setting("agreer","")); self.quantity.clear(); self.point.setText(self.db.setting("collection_point","")); self.status.setCurrentText("ACCEPTED"); self.reason.clear(); self.preview.reset_layout(); self.preview.set_data(self.collect(),calculate(self.species.currentText(),{}))
         self.preview.set_zoom(1.0)
     def load_producers(self):
@@ -206,7 +206,7 @@ class MainWindow(QMainWindow):
     def load_invoice(self,i,duplicate=False):
         d=self.db.get_invoice(i)
         if not d:return
-        self.invoice_id=None if duplicate else d["id"]; self.species.setCurrentText(d["species"]); self.date.setDate(QDate.fromString(d["invoice_date"],"dd/MM/yyyy")); self.producer.setCurrentText(d["producer"] or ""); self.address.setText(d["address"] or ""); self.idcard.setText(d["producer_id"] or ""); self.agreer.setText(d["agreer"] or ""); self.quantity.setText(fmt(d["quantity_qx"])); self.point.setText(d["collection_point"] or ""); self.bon.setText(str(self.db.next_bon() if duplicate else d["bon_number"])); self.status.setCurrentText(d["status"]); self.reason.setCurrentText(d["reason"] or "")
+        self.invoice_id=None if duplicate else d["id"]; self.species.setCurrentText(d["species"]); self.date.setText(d["invoice_date"] or ""); self.producer.setCurrentText(d["producer"] or ""); self.address.setText(d["address"] or ""); self.idcard.setText(d["producer_id"] or ""); self.agreer.setText(d["agreer"] or ""); self.quantity.setText(fmt(d["quantity_qx"])); self.point.setText(d["collection_point"] or ""); self.bon.setText(str(self.db.next_bon() if duplicate else d["bon_number"])); self.status.setCurrentText(d["status"]); self.reason.setCurrentText(d["reason"] or "")
         for k,e in self.analysis_fields.items():e.setText(str(d["values"].get(k,"")))
         self.preview.edits=d.get("layout",{}); self.update_preview()
         self.preview.set_zoom(1.0)
@@ -269,7 +269,7 @@ class MainWindow(QMainWindow):
             if QMessageBox.question(self,"Récupération","Une facture non enregistrée a été récupérée.\n\nRestaurer cette facture ?",QMessageBox.Yes|QMessageBox.No)==QMessageBox.Yes:
                 self.invoice_id=None
                 self.species.setCurrentText(d.get("species","Blé Dur"))
-                self.date.setDate(QDate.fromString(d.get("date",""),"dd/MM/yyyy"))
+                self.date.setText(d.get("date",""))
                 self.producer.setCurrentText(d.get("producer","")); self.address.setText(d.get("address","")); self.idcard.setText(d.get("producer_id",""))
                 self.agreer.setText(d.get("agreer","")); self.quantity.setText(fmt(d.get("quantity_qx"))); self.point.setText(d.get("point","")); self.bon.setText(str(d.get("bon_number",self.db.next_bon())))
                 self.status.setCurrentText(d.get("status","ACCEPTED")); self.reason.setCurrentText(d.get("reason",""))
@@ -291,8 +291,8 @@ def main():
         QWidget { font-size: 10pt; }
         QGroupBox { font-weight: 600; border: 1px solid #b9b9b9; border-radius: 5px; margin-top: 10px; padding-top: 8px; }
         QGroupBox::title { subcontrol-origin: margin; left: 10px; padding: 0 4px; }
-        QLineEdit, QComboBox, QDateEdit { min-height: 30px; padding: 3px 7px; border: 1px solid #b7b7b7; border-radius: 4px; background: white; }
-        QLineEdit:focus, QComboBox:focus, QDateEdit:focus { border: 1px solid #555; }
+        QLineEdit, QComboBox { min-height: 30px; padding: 3px 7px; border: 1px solid #b7b7b7; border-radius: 4px; background: white; }
+        QLineEdit:focus, QComboBox:focus { border: 1px solid #555; }
         QPushButton { min-height: 30px; padding: 4px 12px; }
         QTableWidget { background: white; }
     """)
