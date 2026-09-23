@@ -37,7 +37,7 @@ def ensure_qt_font():
 HEADER_FIELDS={
  "date":(805,246,225,32),"producer":(380,336,155,32),"address":(250,373,285,32),
  "point":(340,410,285,32),"agreer":(940,336,155,32),"quantity":(835,373,175,32),
- "bon":(885,410,165,32),"producer_id":(110,1778,360,38)
+ "bon":(885,410,165,32),"producer_id":(390,1774,360,30)
 }
 
 def rows_for(species):
@@ -78,11 +78,10 @@ def rows_for(species):
         ("impur2","Total (%)","≤ 6")]
     return [
         ("poids","Poids spécifique (kg/hl)","[58 – 62]"),
-        ("humidite","Teneur en eau (%)","≤ 17"),
+        ("ergot","Ergot (‰)","≤ 1"),
         ("grains_sans_valeur","Grains sans valeur (%)","—"),
         ("impurites","Matières inertes (%)","—"),
-        ("impurites_total","Total (%)","≤ 2"),
-        ("ergot","Ergot (‰)","≤ 1")]
+        ("impurites_total","Impuretés diverses — Total (%)","≤ 2")]
 
 class InvoicePreview(QWidget):
     def __init__(self,parent=None):
