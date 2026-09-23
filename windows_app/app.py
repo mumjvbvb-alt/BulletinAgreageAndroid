@@ -1,7 +1,7 @@
-import sys, os, json, shutil
+import sys, os, json, shutil, sqlite3
 from pathlib import Path
 from datetime import date, datetime
-from PySide6.QtCore import Qt, QTimer
+from PySide6.QtCore import Qt, QTimer, QDate
 from PySide6.QtGui import QFont
 from PySide6.QtWidgets import *
 from database import Database
@@ -100,7 +100,7 @@ class MainWindow(QMainWindow):
         root=QWidget(); out=QVBoxLayout(root); scroll=QScrollArea(); scroll.setWidgetResizable(True); body=QWidget(); lay=QVBoxLayout(body)
         box=QGroupBox("Données de la facture"); f=QFormLayout(box)
         self.species=QComboBox(); self.species.addItems(SPECIES); f.addRow("Espèce",self.species)
-        self.date=QDateEdit(); self.date.setCalendarPopup(True); self.date.setDate(__import__("PySide6").QtCore.QDate.currentDate()); f.addRow("Date",self.date)
+        self.date=QDateEdit(); self.date.setCalendarPopup(True); self.date.setDate(QDate.currentDate()); f.addRow("Date",self.date)
         self.producer=QComboBox(); self.producer.setEditable(True); f.addRow("Nom du producteur",self.producer)
         self.address=QLineEdit(); f.addRow("Adresse",self.address); self.idcard=QLineEdit(); f.addRow("N° carte d’identité",self.idcard)
         self.agreer=QLineEdit(); f.addRow("Nom de l’agréeur",self.agreer); self.quantity=QLineEdit(); f.addRow("Quantité (Qx)",self.quantity)
@@ -149,7 +149,7 @@ class MainWindow(QMainWindow):
     def load_invoice(self,i,duplicate=False):
         d=self.db.get_invoice(i)
         if not d:return
-        self.invoice_id=None if duplicate else d["id"]; self.species.setCurrentText(d["species"]); self.date.setDate(__import__("PySide6").QtCore.QDate.fromString(d["invoice_date"],"dd/MM/yyyy")); self.producer.setCurrentText(d["producer"] or ""); self.address.setText(d["address"] or ""); self.idcard.setText(d["producer_id"] or ""); self.agreer.setText(d["agreer"] or ""); self.quantity.setText(fmt(d["quantity_qx"])); self.point.setText(d["collection_point"] or ""); self.bon.setText(str(self.db.next_bon() if duplicate else d["bon_number"])); self.status.setCurrentText(d["status"]); self.reason.setCurrentText(d["reason"] or "")
+        self.invoice_id=None if duplicate else d["id"]; self.species.setCurrentText(d["species"]); self.date.setDate(QDate.fromString(d["invoice_date"],"dd/MM/yyyy")); self.producer.setCurrentText(d["producer"] or ""); self.address.setText(d["address"] or ""); self.idcard.setText(d["producer_id"] or ""); self.agreer.setText(d["agreer"] or ""); self.quantity.setText(fmt(d["quantity_qx"])); self.point.setText(d["collection_point"] or ""); self.bon.setText(str(self.db.next_bon() if duplicate else d["bon_number"])); self.status.setCurrentText(d["status"]); self.reason.setCurrentText(d["reason"] or "")
         for k,e in self.analysis_fields.items():e.setText(str(d["values"].get(k,"")))
         self.preview.edits=d.get("layout",{}); self.update_preview()
     def history(self):
