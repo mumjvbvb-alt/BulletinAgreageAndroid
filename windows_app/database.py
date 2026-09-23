@@ -36,7 +36,7 @@ class Database:
         if reason.strip(): self.conn.execute("INSERT OR IGNORE INTO reasons(category,reason) VALUES(?,?)",(category,reason.strip())); self.conn.commit()
     def save_invoice(self,d,invoice_id=None):
         now=datetime.now().isoformat(timespec="seconds")
-        fields=(d["bon_number"],d["invoice_date"],d["species"],d.get("producer",""),d.get("address",""),d.get("producer_id",""),d.get("agreer",""),d.get("quantity_qx"),d.get("collection_point",""),d.get("status","ACCEPTED"),d.get("reason",""),json.dumps(d.get("values",{}),ensure_ascii=False),json.dumps(d.get("layout",{}),ensure_ascii=False))
+        fields=(d["bon_number"],d.get("invoice_date",d.get("date","")),d["species"],d.get("producer",""),d.get("address",""),d.get("producer_id",""),d.get("agreer",""),d.get("quantity_qx"),d.get("collection_point",""),d.get("status","ACCEPTED"),d.get("reason",""),json.dumps(d.get("values",{}),ensure_ascii=False),json.dumps(d.get("layout",{}),ensure_ascii=False))
         if invoice_id:
             self.conn.execute("""UPDATE invoices SET bon_number=?,invoice_date=?,species=?,producer=?,address=?,producer_id=?,agreer=?,quantity_qx=?,collection_point=?,status=?,reason=?,data_json=?,layout_json=?,updated_at=? WHERE id=?""",fields+(now,invoice_id))
         else:
