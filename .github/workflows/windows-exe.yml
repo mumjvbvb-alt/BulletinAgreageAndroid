@@ -20,6 +20,16 @@ jobs:
       - name: Run calculation tests
         working-directory: windows_app
         run: python test_engine.py
+      - name: Capture real application screenshots
+        working-directory: windows_app
+        env:
+          QT_QPA_PLATFORM: offscreen
+        run: python capture_screenshots.py
+      - name: Upload screenshots
+        uses: actions/upload-artifact@v4
+        with:
+          name: BulletinAgreage-Real-Screenshots
+          path: windows_app/screenshots/*.png
       - name: Build EXE
         working-directory: windows_app
         run: pyinstaller --noconfirm --clean --onefile --windowed --name BulletinAgreage main.py
