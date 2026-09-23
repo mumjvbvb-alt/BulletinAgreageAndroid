@@ -93,11 +93,32 @@ class InvoicePreview(QWidget):
         self.zoom=1.0; self.setMinimumSize(620,720); self.setStyleSheet("background:#e9e9e9;")
     def set_zoom(self,value):
         self.zoom=max(.75,min(1.5,float(value))); self.relayout(); self.update()
+    def _notice_needed(self):
+        return self.data.get("status")=="REFUSED" or bool(self.result and self.result.price_to_discuss)
+
+    def _field_value(self,key):
+        if key in HEADER_FIELDS:return str(self.data.get(key,""))
+        if key=="notice_title":
+            v=self.data.get("values",{}).get("notice_title","")
+            return v or ("PRODUIT REFUSÉ À CAUSE DE :" if self.data.get("status")=="REFUSED" else "PRIX À DÉBATTRE À CAUSE DE :")
+        if key=="notice_reason":
+            return str(self.data.get("values",{}).get("notice_reason","") or self.data.get("reason","") or (self.result.observation if self.result else ""))
+        return str(self.data.get("values",{}).get(key,""))
+
     def set_data(self,data,result):
+        old_species=self.species
+        old_notice=self._notice_needed()
         self.data=data; self.result=result; self.species=data.get("species","Blé Dur")
-        self.rebuild_fields(); self.update()
+        new_notice=self._notice_needed()
+        if not self.fields or old_species!=self.species or old_notice!=new_notice:
+            self.rebuild_fields()
+        else:
+            self.refresh_field_texts()
+            self.relayout()
+        self.update()
     def rebuild_fields(self):
-        for w in list(self.fields.values()): w.deleteLater()
+        for w in list(self.fields.values()):
+            w.hide(); w.setParent(None); w.deleteLater()
         self.fields={}
         defaults=dict(HEADER_FIELDS)
         y=638
@@ -111,16 +132,7 @@ class InvoicePreview(QWidget):
             conf=self.edits.get(key,{})
             self.layout_map[key]=(float(conf.get("x",x)),float(conf.get("y",y)),float(conf.get("font",10)),w,h)
             e=QLineEdit(self)
-            if key in HEADER_FIELDS:
-                val=self.data.get(key,"")
-            elif key=="notice_title":
-                val=self.data.get("values",{}).get("notice_title","")
-                if not val:
-                    val="PRODUIT REFUSÉ À CAUSE DE :" if self.data.get("status")=="REFUSED" else "PRIX À DÉBATTRE À CAUSE DE :"
-            elif key=="notice_reason":
-                val=self.data.get("values",{}).get("notice_reason","") or self.data.get("reason","") or (self.result.observation if self.result else "")
-            else:
-                val=self.data.get("values",{}).get(key,"")
+            val=self._field_value(key)
             e.setText(str(val))
             e.setFrame(False); e.setAlignment(Qt.AlignCenter if key not in HEADER_FIELDS and key not in ("notice_title","notice_reason") else Qt.AlignLeft|Qt.AlignVCenter)
             e.setStyleSheet("background:transparent;color:#000;border:none;padding:0;")
@@ -130,6 +142,13 @@ class InvoicePreview(QWidget):
             e.textChanged.connect(lambda _,k=key:self._changed(k))
             self.fields[key]=e
         self.relayout()
+
+    def refresh_field_texts(self):
+        for key,e in self.fields.items():
+            val=self._field_value(key)
+            if e.text()!=val:
+                e.blockSignals(True); e.setText(val); e.blockSignals(False)
+
     def _changed(self,key):
         if key in HEADER_FIELDS:self.data[key]=self.fields[key].text()
         elif key=="notice_title":self.data.setdefault("values",{})["notice_title"]=self.fields[key].text()
