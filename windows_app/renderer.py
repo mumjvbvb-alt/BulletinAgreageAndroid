@@ -14,15 +14,25 @@ from invoice_engine import RULES, fmt
 W,H=1338,1900
 COLS=(102,530,653,760,927,1063,1235)
 _REPORTLAB_FONTS=Path(__import__("reportlab").__file__).resolve().parent/"fonts"
-_VERA_REG=QFontDatabase.addApplicationFont(str(_REPORTLAB_FONTS/"Vera.ttf"))
-_VERA_FAMILIES=QFontDatabase.applicationFontFamilies(_VERA_REG) if _VERA_REG >= 0 else []
-UI_FONT=_VERA_FAMILIES[0] if _VERA_FAMILIES else "Sans Serif"
+UI_FONT="Sans Serif"
+_QT_FONT_READY=False
 try:
     pdfmetrics.registerFont(TTFont("Vera",str(_REPORTLAB_FONTS/"Vera.ttf")))
     pdfmetrics.registerFont(TTFont("Vera-Bold",str(_REPORTLAB_FONTS/"VeraBd.ttf")))
     PDF_FONT="Vera"; PDF_BOLD="Vera-Bold"
 except Exception:
     PDF_FONT="Helvetica"; PDF_BOLD="Helvetica-Bold"
+
+def ensure_qt_font():
+    global UI_FONT, _QT_FONT_READY
+    if _QT_FONT_READY:return
+    try:
+        reg=QFontDatabase.addApplicationFont(str(_REPORTLAB_FONTS/"Vera.ttf"))
+        fam=QFontDatabase.applicationFontFamilies(reg) if reg >= 0 else []
+        if fam:UI_FONT=fam[0]
+    except Exception:
+        UI_FONT="Sans Serif"
+    _QT_FONT_READY=True
 
 HEADER_FIELDS={
  "date":(805,246,225,32),"producer":(380,336,155,32),"address":(250,373,285,32),
@@ -76,6 +86,7 @@ def rows_for(species):
 
 class InvoicePreview(QWidget):
     def __init__(self,parent=None):
+        ensure_qt_font()
         super().__init__(parent)
         self.species="Blé Dur"; self.data={}; self.result=None
         self.layout_map={}; self.edit_mode=False; self.edits={}; self.fields={}
