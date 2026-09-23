@@ -2,7 +2,7 @@ import sys, os, json, shutil, sqlite3
 from pathlib import Path
 from datetime import date, datetime
 from PySide6.QtCore import Qt, QTimer, QDate
-from PySide6.QtGui import QFont
+from PySide6.QtGui import QFont, QAction
 from PySide6.QtWidgets import *
 from database import Database
 from invoice_engine import SPECIES,RULES,calculate,num,fmt
