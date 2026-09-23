@@ -11,7 +11,7 @@ from invoice_engine import RULES, fmt
 
 W,H=1338,1900
 COLS=(102,530,653,760,927,1063,1235)
-UI_FONT="Arial"
+UI_FONT="Sans Serif"
 PDF_FONT="Helvetica"
 PDF_BOLD="Helvetica-Bold"
 
