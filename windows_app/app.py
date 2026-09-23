@@ -88,7 +88,7 @@ class MainWindow(QMainWindow):
     def __init__(self):
         super().__init__(); ROOT.mkdir(parents=True,exist_ok=True); PDF_ROOT.mkdir(parents=True,exist_ok=True); BACKUP_ROOT.mkdir(parents=True,exist_ok=True)
         self.db=Database(ROOT/"bulletin.db"); self.invoice_id=None; self.last_saved=None; self.setWindowTitle("Bulletin d’Agréage — Professionnel"); self.resize(1650,980)
-        self.build(); self.load_producers(); self.load_reasons(); self.new_invoice(); self.daily_backup(); self.recover_draft()
+        self.build(); self.load_producers(); self.load_reasons(); self.new_invoice(clear_draft=False); self.daily_backup(); self.recover_draft()
         self.timer=QTimer(self); self.timer.timeout.connect(self.autosave); self.timer.start(30000)
         self.draft_timer=QTimer(self); self.draft_timer.setSingleShot(True); self.draft_timer.timeout.connect(self.write_draft)
     def build(self):
@@ -157,8 +157,8 @@ class MainWindow(QMainWindow):
         d=self.collect() if self.bon.text() else {"species":self.species.currentText(),"values":{}}
         res=calculate(d["species"],d.get("values",{})); self.preview.set_data(d,res)
         self.notice.setText(("PRIX À DÉBATTRE" if res.price_to_discuss else "")+((" — "+res.observation) if res.observation else ""))
-    def new_invoice(self):
-        self.remove_draft()
+    def new_invoice(self,clear_draft=True):
+        if clear_draft: self.remove_draft()
         self.invoice_id=None; self.species.setCurrentText("Blé Dur"); self.rebuild_analysis(); self.date.setDate(__import__("PySide6").QtCore.QDate.currentDate())
         self.bon.setText(str(self.db.next_bon())); self.producer.setCurrentText(""); self.address.clear(); self.idcard.clear(); self.agreer.setText(self.db.setting("agreer","")); self.quantity.clear(); self.point.setText(self.db.setting("collection_point","")); self.status.setCurrentText("ACCEPTED"); self.reason.clear(); self.preview.reset_layout(); self.preview.set_data(self.collect(),calculate(self.species.currentText(),{}))
         self.preview.set_zoom(1.0)
