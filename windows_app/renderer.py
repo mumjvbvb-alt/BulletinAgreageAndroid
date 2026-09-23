@@ -169,7 +169,7 @@ class InvoicePreview(QWidget):
         status=self.data.get("status","ACCEPTED")
         if status=="REFUSED" or (self.result and self.result.price_to_discuss): self.draw_notice_box(p)
     def draw_table(self,p,txt):
-        x0,x1,x2,x3,x4,x5,x6=COLS; top=515; rows=rows_for(self.species); rh=61 if len(rows)>=15 else (68 if len(rows)>=8 else 86)
+        x0,x1,x2,x3,x4,x5,x6=COLS; top=515; rows=rows_for(self.species); rh=55 if len(rows)>=15 else (68 if len(rows)>=8 else 86)
         bottom=top+82+len(rows)*rh+48
         p.drawRect(x0,top,x6-x0,bottom-top)
         for x in COLS[1:-1]:p.drawLine(x,top,x,bottom)
