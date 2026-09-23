@@ -1,7 +1,8 @@
-name: Build Windows EXE
+name: Build Professional Windows EXE
 on:
   workflow_dispatch:
   push:
+    branches: [professional-windows-rebuild]
     paths:
       - 'windows_app/**'
       - '.github/workflows/windows-exe.yml'
@@ -11,17 +12,16 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
-        with:
-          python-version: '3.12'
-      - name: Install dependencies
-        run: python -m pip install -r windows_app/requirements.txt
+        with: {python-version: '3.12'}
+      - name: Install
+        run: python -m pip install --upgrade pip && python -m pip install -r windows_app/requirements.txt
+      - name: Syntax check
+        run: python -m compileall windows_app
       - name: Build EXE
         working-directory: windows_app
         run: pyinstaller --noconfirm --clean --onefile --windowed --name BulletinAgreage main.py
       - name: Upload EXE
         uses: actions/upload-artifact@v4
         with:
-          name: BulletinAgreage-Windows
+          name: BulletinAgreage-Professional-Windows
           path: windows_app/dist/BulletinAgreage.exe
-
-# Professional rebuild trigger
