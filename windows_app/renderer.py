@@ -52,8 +52,8 @@ def rows_for(species):
         ("impur1","Total (%)","[1 – 3]"),
         ("casses","Grains cassés (%)","≤ 4"),
         ("punaises","Grains punaisés (%)","≤ 2"),
-        ("boutes","Grains fortement boutés (%)","—"),
-        ("faibles_boutes","Grains faiblement boutés (%)","—"),
+        ("boutes_forts","Grains fortement boutés (%)","—"),
+        ("boutes_faibles","Grains faiblement boutés (%)","—"),
         ("mouchetes","Grains fortement mouchetés (%)","—"),
         ("graines_betail","Graines étrangères utilisables\npour le bétail (%)","—"),
         ("impur2","Total (%)","≤ 6")]
@@ -188,6 +188,8 @@ class InvoicePreview(QWidget):
                 b,rf=self.result.rows.get(key,(0,0))
                 if b: txt(fmt(b),x3,y+rh/2+6,10,True,Qt.AlignCenter,x4-x3)
                 if rf: txt(fmt(rf),x4,y+rh/2+6,10,True,Qt.AlignCenter,x5-x4)
+                obs=self.result.observations.get(key,"")
+                if obs: txt(obs,x5,y+rh/2+6,8,False,Qt.AlignCenter,x6-x5-6)
         y=bottom-24; txt("Total des Bonifications et Réfactions",x0,y,10,True,Qt.AlignCenter,x2-x0)
         if self.result:
             txt(fmt(self.result.bonus),x3,y,10,True,Qt.AlignCenter,x4-x3)
