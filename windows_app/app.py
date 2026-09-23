@@ -270,9 +270,9 @@ class MainWindow(QMainWindow):
 
 def main():
     from PySide6.QtWidgets import QApplication
-    app=QApplication(sys.argv); app.setStyle("Fusion"); app.setFont(QFont("Arial",10))
+    app=QApplication(sys.argv); app.setStyle("Fusion"); app.setFont(QFont())
     app.setStyleSheet("""
-        QWidget { font-family: Arial; font-size: 10pt; }
+        QWidget { font-size: 10pt; }
         QGroupBox { font-weight: 600; border: 1px solid #b9b9b9; border-radius: 5px; margin-top: 10px; padding-top: 8px; }
         QGroupBox::title { subcontrol-origin: margin; left: 10px; padding: 0 4px; }
         QLineEdit, QComboBox, QDateEdit { min-height: 30px; padding: 3px 7px; border: 1px solid #b7b7b7; border-radius: 4px; background: white; }
