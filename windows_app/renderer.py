@@ -1,19 +1,28 @@
 from io import BytesIO
 from pathlib import Path
 from PySide6.QtCore import Qt, QRectF
-from PySide6.QtGui import QPainter, QPen, QFont, QImage
+from PySide6.QtGui import QPainter, QPen, QFont, QImage, QFontDatabase
 from PySide6.QtWidgets import QWidget, QLineEdit
 from reportlab.pdfgen import canvas
 from reportlab.lib.pagesizes import A4
 from reportlab.lib.utils import ImageReader
+from reportlab.pdfbase import pdfmetrics
+from reportlab.pdfbase.ttfonts import TTFont
 from logo_data import logo_image
 from invoice_engine import RULES, fmt
 
 W,H=1338,1900
 COLS=(102,530,653,760,927,1063,1235)
-UI_FONT="Sans Serif"
-PDF_FONT="Helvetica"
-PDF_BOLD="Helvetica-Bold"
+_REPORTLAB_FONTS=Path(__import__("reportlab").__file__).resolve().parent/"fonts"
+_VERA_REG=QFontDatabase.addApplicationFont(str(_REPORTLAB_FONTS/"Vera.ttf"))
+_VERA_FAMILIES=QFontDatabase.applicationFontFamilies(_VERA_REG) if _VERA_REG >= 0 else []
+UI_FONT=_VERA_FAMILIES[0] if _VERA_FAMILIES else "Sans Serif"
+try:
+    pdfmetrics.registerFont(TTFont("Vera",str(_REPORTLAB_FONTS/"Vera.ttf")))
+    pdfmetrics.registerFont(TTFont("Vera-Bold",str(_REPORTLAB_FONTS/"VeraBd.ttf")))
+    PDF_FONT="Vera"; PDF_BOLD="Vera-Bold"
+except Exception:
+    PDF_FONT="Helvetica"; PDF_BOLD="Helvetica-Bold"
 
 HEADER_FIELDS={
  "date":(805,246,225,32),"producer":(380,336,155,32),"address":(250,373,285,32),
