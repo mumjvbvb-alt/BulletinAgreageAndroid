@@ -29,33 +29,60 @@ def fnum(v):
     except:return None
 def steps(excess,step):return 0 if excess<=0 else math.ceil(excess/step-1e-9)
 
-def calculate(q):
-    p,h,e=fnum(q.get("poids")),fnum(q.get("humidite")),fnum(q.get("ergot"))
-    v={k:(fnum(q.get(k)) or 0) for k,_,_ in QUALITY}
-    i1=v["tamis"]+v["debris"]+v["nuisibles"]
-    i2=v["casses"]+v["boutes"]+v["roux"]+v["mouchetes"]+v["punaises"]+v["piques"]
-    mit=v["mitadin"]+v["tendre"]; bonus=red=0.; rows={}; notes=[]
-    def add(k,b=0,r=0):
+def calculate(q, espece="Blé Dur"):
+    v={k:(fnum(q.get(k)) or 0.0) for k,_,_ in QUALITY}
+    bonus=red=0.0; rows={}; notes=[]
+    def add(k,b=0.0,r=0.0):
         nonlocal bonus,red
         bonus+=b; red+=r; rows[k]=(b,r)
+    p,h,e=fnum(q.get("poids")),fnum(q.get("humidite")),fnum(q.get("ergot"))
+    if espece=="Blé Dur":
+        if p is not None:
+            if p>80: add("poids",steps(p-80,.25)*.15)
+            elif 72<=p<76: add("poids",r=steps(76-p,.25)*.10)
+            elif p<72: notes.append("Poids spécifique inférieur à 72 kg/hl : hors limite.")
+        if h is not None and h>17: notes.append("Humidité supérieure à 17 % : hors limite.")
+        if e is not None and e>1: notes.append("Ergot supérieur à 1 ‰ : hors limite.")
+        i1=v["tamis"]+v["debris"]+v["nuisibles"]
+        if i1<1: add("imp1",b=steps(1-i1,.25)*.125)
+        elif 3<i1<=6: add("imp1",r=steps(i1-3,.25)*.125)
+        elif i1>6: notes.append("Impuretés 1ère catégorie > 6 % : prix à débattre.")
+        if v["casses"]>5: add("casses",r=steps(v["casses"]-5,.25)*.075)
+        if v["boutes"]>5: add("boutes",r=min(.50,steps(v["boutes"]-5,1)*.05))
+        i2=v["casses"]+v["boutes"]+v["roux"]+v["mouchetes"]+v["punaises"]+v["piques"]
+        if 10<i2<=20: add("imp2",r=steps(i2-10,1)*.50)
+        elif i2>20: notes.append("Impuretés 2ème catégorie > 20 % : prix à débattre.")
+        mit=v["mitadin"]+v["tendre"]
+        if 0<mit<=10: add("mitadin",b=.25)
+        elif 20<mit<=70: add("mitadin",r=steps(mit-20,1)*.05)
+        elif mit>70: notes.append("Mitadin > 70 % : paiement au prix du blé tendre avec son barème.")
+        return bonus,red,i1,i2,mit,rows,notes
+    if espece=="Blé Tendre":
+        if p is not None:
+            if p>77: add("poids",b=steps(min(p,78)-77,.25)*.10+steps(max(min(p,80)-78,0),.25)*.05+steps(max(min(p,83)-80,0),.25)*.02)
+            elif 69<=p<74: add("poids",r=steps(min(74-p,1),.25)*.04+steps(min(max(73-p,0),1),.25)*.10+steps(max(70-p,0),.25)*.20)
+            elif p<69: notes.append("Poids spécifique inférieur à 69 kg/hl : hors limite.")
+        if h is not None and h>17: notes.append("Humidité supérieure à 17 % : hors limite.")
+        if e is not None and e>0.01: notes.append("Ergot supérieur à 0,01 ‰ : prix à débattre.")
+        i1=v["tamis"]+v["debris"]+v["nuisibles"]
+        if i1<1: add("imp1",b=steps(1-i1,.25)*.12)
+        elif 3<i1<=6: add("imp1",r=steps(i1-3,.25)*.12)
+        elif i1>6: notes.append("Impuretés 1ère catégorie > 6 % : prix à débattre.")
+        if v["casses"]>4: add("casses",r=steps(v["casses"]-4,.25)*.04)
+        if v["punaises"]>2: add("punaises",r=steps(v["punaises"]-2,.25)*.08)
+        if v["boutes"]>0: add("boutes",r=steps(v["boutes"],.25)*.40)
+        if v["faibleBoutes"]>0: add("faibleBoutes",r=steps(v["faibleBoutes"],.25)*.20)
+        i2=v["casses"]+v["punaises"]+v["boutes"]+v["faibleBoutes"]+v["mouchetes"]+v["etrangers"]
+        if 6<i2<=15: add("imp2",r=steps(i2-6,.25)*.05)
+        elif i2>15: notes.append("Impuretés 2ème catégorie > 15 % : prix à débattre.")
+        return bonus,red,i1,i2,0,rows,notes
     if p is not None:
-        if p>80:add("poids",steps(p-80,.25)*.15)
-        elif p>=72:add("poids",r=steps(76-p,.25)*.10)
-        else:notes.append("Poids spécifique inférieur à 72 kg/hl : hors limite.")
-    if h is not None and h>17:notes.append("Humidité supérieure à 17 % : hors limite.")
-    if e is not None and e>1:add("ergot",r=steps(e-1,.25)*.50)
-    if i1<1:add("imp1",b=steps(1-i1,.25)*.125)
-    elif 3<i1<=6:add("imp1",r=steps(i1-3,.25)*.125)
-    elif i1>6:notes.append("Impuretés 1ère catégorie > 6 % : prix à débattre.")
-    if v["casses"]>5:add("casses",r=steps(v["casses"]-5,.25)*.075)
-    if v["boutes"]>5:add("boutes",r=steps(v["boutes"]-5,1)*.05)
-    if 10<i2<=20:add("imp2",r=steps(i2-10,1)*.50)
-    elif i2>20:notes.append("Impuretés 2ème catégorie > 20 % : hors barème.")
-    if 20<mit<=70:add("mit",r=steps(mit-20,1)*.05)
-    elif mit>70:notes.append("Mitadin + blé tendre > 70 % : situation à traiter selon le barème.")
-    if v["tendre"]>10:notes.append("Blé tendre > 10 % : mention spéciale.")
-    return bonus,red,i1,i2,mit,rows,notes
-
+        if p>62: add("poids",b=steps(p-62,.5)*.24)
+        elif p<58: add("poids",r=steps(58-p,.5)*.12)
+    if e is not None and e>1: notes.append("Ergot supérieur à 1 ‰ : hors limite.")
+    imp=v["sansValeur"]+v["inertes"]
+    if imp>2: add("impDiverses",r=steps(imp-2,.5)*.12)
+    return bonus,red,imp,0,0,rows,notes
 class Sticker(QFrame):
     def __init__(self,title,text,accent,parent):
         super().__init__(parent); self.drag=None; self.accent=accent
@@ -436,7 +463,7 @@ class MainWindow(QMainWindow):
 
     def calculate(self):
         self.collect()
-        self.result = calculate(self.values)
+        self.result = calculate(self.values, self.data.get("espece","Blé Dur"))
         self.page.set_values(self.data, self.values, self.result)
         self.page.price.setVisible(True)
         self.page.refusal.setVisible(True)
