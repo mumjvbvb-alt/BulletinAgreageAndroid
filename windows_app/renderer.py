@@ -166,8 +166,10 @@ class InvoicePreview(QWidget):
         self.relayout(); super().resizeEvent(e)
     def set_edit_mode(self,on):
         self.edit_mode=on
-        for e in self.fields.values():
-            e.setReadOnly(not on)
+        for key,e in self.fields.items():
+            # Only the two notice fields are directly editable in layout mode;
+            # normal invoice data remains controlled by the left input panel.
+            e.setReadOnly(not (on and key in ("notice_title","notice_reason")))
             e.setEnabled(True)
         self.update()
     def set_layout(self,key,x,y,font):
