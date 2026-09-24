@@ -194,7 +194,13 @@ class InvoicePreview(QWidget):
         except Exception: pass
         def txt(t,x,y,size,bold=False,align=Qt.AlignLeft,w=300):
             f=QFont(UI_FONT,size); f.setBold(bold); p.setFont(f)
-            p.drawText(QRectF(x,y-size,w,size+8),Qt.TextWordWrap|align,t)
+            lines=max(1,str(t).count("\\n")+1)
+            if lines>1:
+                rect=QRectF(x,y-size*lines/2-2,w,size*lines+8)
+                flags=Qt.TextWordWrap|align|Qt.AlignVCenter
+            else:
+                rect=QRectF(x,y-size,w,size+8); flags=Qt.TextWordWrap|align
+            p.drawText(rect,flags,t)
         txt("OFFICE ALGERIEN INTERPROFESSIONNEL DES CEREALES",130,78,23,True,Qt.AlignCenter,1078)
         txt("Coopérative de Céréales et des Légumes Secs de BATNA",170,125,18,True,Qt.AlignCenter,998)
         txt("Bulletin d'Agréage",330,192,27,True,Qt.AlignCenter,678)
@@ -277,8 +283,12 @@ class InvoicePreview(QWidget):
         c.line(x0,H-597,x6,H-597)
         for i,(key,label,lim) in enumerate(rows):
             y=597+i*rh; c.line(x0,H-y-rh,x6,H-y-rh)
-            c.setFont(PDF_BOLD,10); c.drawString(x0+10,H-(y+rh/2),label.replace("\\n"," "))
-            c.setFont(PDF_FONT,10); c.drawCentredString((x1+x2)/2,H-(y+rh/2),lim)
+            c.setFont(PDF_BOLD,8.5)
+            parts=label.split("\\n")
+            base=H-(y+rh/2)+(len(parts)-1)*4.5
+            for n,line in enumerate(parts):
+                c.drawString(x0+8,base-n*9,line)
+            c.setFont(PDF_FONT,9); c.drawCentredString((x1+x2)/2,H-(y+rh/2),lim)
             if self.result:
                 b,rf=self.result.rows.get(key,(0,0))
                 if b:c.drawCentredString((x3+x4)/2,H-(y+rh/2),fmt(b))
