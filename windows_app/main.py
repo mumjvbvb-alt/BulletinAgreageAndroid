@@ -104,13 +104,15 @@ class InvoicePage(QWidget):
         self.setMinimumSize(PW,PH)
         self.price=Sticker("PRIX À DÉBATTRE","PRIX À DÉBATTRE À .......... — À CAUSE DE : ................","#a76b00",self)
         self.refusal=Sticker("PRODUIT REFUSÉ À CAUSE DE","........................................................","#c51f3a",self)
+        self.price.setObjectName("priceSticker")
+        self.refusal.setObjectName("refusalSticker")
         self.load_stickers()
         self.price.show()
         self.refusal.show()
     def load_stickers(self):
-        for s,k,d in [(self.price,"price",QPoint(42,246)),(self.refusal,"refusal",QPoint(407,246))]:
+        for s,k,d in [(self.price,"price",QPoint(48,820)),(self.refusal,"refusal",QPoint(410,820))]:
             s.setGeometry(self.settings.value(k+"X",d.x(),int),self.settings.value(k+"Y",d.y(),int),
-                          self.settings.value(k+"W",285,int),self.settings.value(k+"H",72,int))
+                          self.settings.value(k+"W",330,int),self.settings.value(k+"H",64,int))
             s.edit.setText(self.settings.value(k+"Text",s.edit.text()))
         self.price.show(); self.refusal.show()
     def save_stickers(self):
@@ -190,7 +192,7 @@ class MainWindow(QMainWindow):
     def __init__(self):
         super().__init__()
         self.setWindowTitle("Bulletin d’Agréage — OAIC BATNA")
-        self.resize(1420, 940)
+        self.resize(1480, 960)
         self.setMinimumSize(1180, 760)
         self.data = {
             "espece": "Blé Dur",
@@ -349,10 +351,14 @@ class MainWindow(QMainWindow):
 
         notes = QGroupBox("Mentions")
         nl = QVBoxLayout(notes)
-        self.priceText = QTextEdit()
-        self.refusalText = QTextEdit()
-        self.priceText.setMaximumHeight(70)
-        self.refusalText.setMaximumHeight(70)
+        self.priceText = QLineEdit()
+        self.refusalText = QLineEdit()
+        self.priceText.setPlaceholderText("Texte du bandeau — vous pouvez le modifier")
+        self.refusalText.setPlaceholderText("Motif du refus — vous pouvez le modifier")
+        self.priceText.setMinimumHeight(34)
+        self.refusalText.setMinimumHeight(34)
+        self.priceText.textChanged.connect(lambda t: self.page.price.edit.setText(t))
+        self.refusalText.textChanged.connect(lambda t: self.page.refusal.edit.setText(t))
         nl.addWidget(QLabel("Prix à débattre"))
         nl.addWidget(self.priceText)
         nl.addWidget(QLabel("Produit refusé à cause de"))
@@ -431,8 +437,8 @@ class MainWindow(QMainWindow):
                 e.setCurrentText(self.data.get(k, "Blé Dur"))
         for k, e in self.qfields.items():
             e.setText(self.values.get(k, ""))
-        self.priceText.setPlainText(self.page.price.edit.text())
-        self.refusalText.setPlainText(self.page.refusal.edit.text())
+        self.priceText.setText(self.page.price.edit.text())
+        self.refusalText.setText(self.page.refusal.edit.text())
         self.page.set_values(self.data, self.values, self.result)
 
     def on_input_changed(self):
@@ -446,12 +452,16 @@ class MainWindow(QMainWindow):
         for k, e in self.gfields.items():
             self.data[k] = e.text() if isinstance(e, QLineEdit) else e.currentText()
         self.values = {k: e.text().strip() for k, e in self.qfields.items()}
-        self.page.price.edit.setText(self.priceText.toPlainText().strip())
-        self.page.refusal.edit.setText(self.refusalText.toPlainText().strip())
+        self.page.price.edit.setText(self.priceText.text().strip())
+        self.page.refusal.edit.setText(self.refusalText.text().strip())
         self.data["status"] = "Accepté" if self.accept.property("active") else "Refusé"
 
     def set_status(self, s):
         self.data["status"] = s
+        self.priceText.setEnabled(s == "Accepté")
+        self.refusalText.setEnabled(s == "Refusé")
+        self.page.price.setVisible(s == "Accepté")
+        self.page.refusal.setVisible(s == "Refusé")
         self.accept.setProperty("active", s == "Accepté")
         self.reject.setProperty("active", s == "Refusé")
         self.accept.setText(("●" if s == "Accepté" else "○") + "  Accepté")
@@ -464,8 +474,8 @@ class MainWindow(QMainWindow):
         self.collect()
         self.result = calculate(self.values, self.data.get("espece","Blé Dur"))
         self.page.set_values(self.data, self.values, self.result)
-        self.page.price.setVisible(True)
-        self.page.refusal.setVisible(True)
+        self.page.price.setVisible(self.data.get("status") == "Accepté")
+        self.page.refusal.setVisible(self.data.get("status") == "Refusé")
         self.page.save_stickers()
         self.statusBar().showMessage(
             f"Calcul terminé — Bonification +{self.result[0]:.2f} DA | "
@@ -480,6 +490,9 @@ class MainWindow(QMainWindow):
         }
         self.values = {k: "" for k, _, _ in QUALITY}
         self.result = None
+        self.page.settings.remove("priceX"); self.page.settings.remove("priceY")
+        self.page.settings.remove("refusalX"); self.page.settings.remove("refusalY")
+        self.page.load_stickers()
         self.refresh()
         self.set_status("Accepté")
 
@@ -512,6 +525,7 @@ class MainWindow(QMainWindow):
             self.values = d.get("values", self.values)
             self.page.price.edit.setText(d.get("price", self.page.price.edit.text()))
             self.page.refusal.edit.setText(d.get("refusal", self.page.refusal.edit.text()))
+            self.page.load_stickers()
             self.page.set_document_font_size(d.get("documentFontSize", self.page.base_font_size))
             self.fontSize.setCurrentText(str(self.page.base_font_size))
             self.refresh()
@@ -528,7 +542,7 @@ class MainWindow(QMainWindow):
         self.page.price.setVisible(True)
         self.page.refusal.setVisible(True)
         self.statusBar().showMessage(
-            "Déplacez les encadrés par glisser-déposer ; Ctrl + molette pour redimensionner"
+            "Déplacez les bandeaux directement sur la page. Ctrl + molette = redimensionner. « Sauver position » conserve la mise en page."
         )
 
     def zoom(self, d):
@@ -581,14 +595,17 @@ QMainWindow{background:#e9eef5}
 #previewFrame{background:#dce5ee;border:1px solid #cbd7e2;border-radius:8px}
 #previewTools{background:white;border:1px solid #d4dee8;border-radius:7px}
 #previewTools QPushButton{background:white;border:1px solid #cbd7e5;border-radius:6px;padding:6px 10px}
-#editorPanel{background:white;border:1px solid #d4dee8;border-radius:8px}
+#editorPanel{background:white;border:1px solid #c5d2df;border-radius:10px}
+#priceSticker{background:#fff7dc;border:2px solid #c28b24;border-radius:9px}
+#refusalSticker{background:#fff0f2;border:2px solid #c51f3a;border-radius:9px}
 #editorTitle{font-size:16pt;font-weight:800;color:#0d477d;padding:3px}
 QTabWidget::pane{border:1px solid #d4dee8;border-radius:6px}
 QTabBar::tab{padding:9px 18px;background:#edf3f8;border:0}
 QTabBar::tab:selected{background:#0d477d;color:white}
 QGroupBox{border:1px solid #d6e0ea;border-radius:8px;margin-top:10px;padding:10px;font-weight:700}
 QGroupBox::title{subcontrol-origin:margin;left:10px;padding:0 5px;color:#315a7d}
-QLineEdit,QTextEdit,QComboBox{border:1px solid #c7d5e2;border-radius:6px;padding:7px;background:white}
+QLineEdit,QTextEdit,QComboBox{border:1px solid #b9c9d8;border-radius:7px;padding:8px 9px;background:white;min-height:31px}
+QLineEdit:hover,QTextEdit:hover,QComboBox:hover{border-color:#6d9abd}
 QLineEdit:focus,QTextEdit:focus,QComboBox:focus{border:2px solid #2a73a8}
 #qualityInput{text-align:center;font-weight:700;min-width:70px}
 #inputField{min-height:28px}
