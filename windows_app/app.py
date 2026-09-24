@@ -97,6 +97,16 @@ class MainWindow(QMainWindow):
         self.timer=QTimer(self); self.timer.timeout.connect(self.autosave); self.timer.start(30000)
         self.draft_timer=QTimer(self); self.draft_timer.setSingleShot(True); self.draft_timer.timeout.connect(self.write_draft)
     def build(self):
+        self.setStyleSheet("""
+            QMainWindow { background:#eceff1; }
+            QGroupBox { font-weight:600; border:1px solid #b8bec4; border-radius:6px; margin-top:8px; padding-top:10px; background:#ffffff; }
+            QGroupBox::title { subcontrol-origin:margin; left:10px; padding:0 5px; }
+            QLineEdit, QComboBox { min-height:30px; padding:2px 7px; border:1px solid #aeb5bb; border-radius:4px; background:#fff; }
+            QLineEdit:focus, QComboBox:focus { border:2px solid #5b7c99; }
+            QPushButton { min-height:32px; padding:3px 12px; border:1px solid #9aa3aa; border-radius:4px; background:#f8f9fa; }
+            QPushButton:hover { background:#e8edf1; }
+            QHeaderView::section { padding:5px; font-weight:600; }
+        """)
         mb=self.menuBar(); fm=mb.addMenu("Fichier")
         for label,fn in [("Nouvelle facture",self.new_invoice),("Historique",self.history),("Annuler les modifications",self.revert_saved),("Exporter PDF",self.export_pdf),("Imprimer",self.print_invoice),("Quitter",self.close)]:a=QAction(label,self);a.triggered.connect(fn);fm.addAction(a)
         tools=mb.addMenu("Outils"); a=QAction("Modifier la mise en page",self);a.triggered.connect(self.edit_layout);tools.addAction(a); a=QAction("Réinitialiser la mise en page",self);a.triggered.connect(self.reset_layout);tools.addAction(a)
@@ -124,7 +134,16 @@ class MainWindow(QMainWindow):
         self.status=QComboBox(); self.status.addItems(["ACCEPTED","REFUSED"]); f.addRow("Décision",self.status)
         self.reason=QComboBox(); self.reason.setEditable(True); f.addRow("Cause du refus",self.reason)
         lay.addWidget(box); self.analysis=QGroupBox("Analyses — entrer les Valeurs uniquement"); self.af=QGridLayout(self.analysis); self.af.setColumnStretch(0,4); self.af.setColumnStretch(1,2); self.af.setColumnStretch(2,1); self.af.setColumnStretch(3,2); lay.addWidget(self.analysis)
-        self.notice=QLabel(); self.notice.setWordWrap(True); lay.addWidget(self.notice)
+        summary=QGroupBox("Résumé automatique")
+        sf=QGridLayout(summary)
+        self.bonus_label=QLabel("0,00 DA"); self.ref_label=QLabel("0,00 DA"); self.decision_label=QLabel("ACCEPTÉ")
+        self.bonus_label.setStyleSheet("font-size:14pt;font-weight:700;"); self.ref_label.setStyleSheet("font-size:14pt;font-weight:700;")
+        self.decision_label.setStyleSheet("font-size:12pt;font-weight:700;padding:5px;border:1px solid #999;border-radius:4px;")
+        sf.addWidget(QLabel("Bonification totale"),0,0); sf.addWidget(self.bonus_label,0,1)
+        sf.addWidget(QLabel("Réfaction totale"),0,2); sf.addWidget(self.ref_label,0,3)
+        sf.addWidget(QLabel("État"),1,0); sf.addWidget(self.decision_label,1,1,1,3)
+        lay.addWidget(summary)
+        self.notice=QLabel(); self.notice.setWordWrap(True); self.notice.setStyleSheet("padding:7px;border:1px solid #bbb;background:#f5f5f5;"); lay.addWidget(self.notice)
         row=QHBoxLayout(); reset=QPushButton("Réinitialiser"); save=QPushButton("Enregistrer"); pdf=QPushButton("Exporter PDF"); hist=QPushButton("Historique")
         for b,fn in [(reset,self.reset_analysis),(save,self.save_invoice),(pdf,self.export_pdf),(hist,self.history)]:b.clicked.connect(fn);row.addWidget(b)
         lay.addLayout(row); lay.addStretch(); scroll.setWidget(body); out.addWidget(scroll)
@@ -176,6 +195,14 @@ class MainWindow(QMainWindow):
         if not hasattr(self,"analysis_fields"):return
         d=self.collect() if self.bon.text() else {"species":self.species.currentText(),"values":{}}
         res=calculate(d["species"],d.get("values",{})); self.preview.set_data(d,res)
+        self.bonus_label.setText(fmt(res.bonus)+" DA")
+        self.ref_label.setText(fmt(res.refaction)+" DA")
+        if self.status.currentText()=="REFUSED":
+            self.decision_label.setText("PRODUIT REFUSÉ"); self.decision_label.setStyleSheet("font-size:12pt;font-weight:700;padding:5px;border:1px solid #888;border-radius:4px;")
+        elif res.price_to_discuss:
+            self.decision_label.setText("PRIX À DÉBATTRE"); self.decision_label.setStyleSheet("font-size:12pt;font-weight:700;padding:5px;border:1px solid #888;border-radius:4px;")
+        else:
+            self.decision_label.setText("ACCEPTÉ"); self.decision_label.setStyleSheet("font-size:12pt;font-weight:700;padding:5px;border:1px solid #888;border-radius:4px;")
         self.notice.setText(("PRIX À DÉBATTRE" if res.price_to_discuss else "")+((" — "+res.observation) if res.observation else ""))
     def new_invoice(self,clear_draft=True):
         if clear_draft: self.remove_draft()
