@@ -19,7 +19,8 @@ BACKUP_ROOT=ROOT/"Backups"
 
 class LayoutDialog(QDialog):
     def __init__(self,preview,parent=None):
-        super().__init__(parent); self.preview=preview; self.setWindowTitle("Modifier la mise en page"); self.resize(520,430)
+        super().__init__(parent); self.preview=preview; self.preview.set_edit_mode(True); self.setWindowTitle("Modifier la mise en page"); self.resize(520,430)
+        self.finished.connect(lambda _: self.preview.set_edit_mode(False))
         lay=QFormLayout(self); self.field=QComboBox(); self.field.addItems(preview.fields.keys())
         self.x=QDoubleSpinBox(); self.x.setRange(0,1338); self.y=QDoubleSpinBox(); self.y.setRange(0,1900); self.font=QDoubleSpinBox(); self.font.setRange(6,30); self.font.setSingleStep(.5)
         for w in (self.x,self.y,self.font):w.setDecimals(1)
