@@ -1,6 +1,6 @@
 import sys, os, json, math, datetime
 from PySide6.QtCore import Qt, QRectF, QPoint, QSettings, QRegularExpression
-from PySide6.QtGui import QPainter, QPen, QFont, QColor
+from PySide6.QtGui import QPainter, QPen, QFont, QColor, QPixmap
 from PySide6.QtWidgets import (
     QApplication, QMainWindow, QWidget, QFrame, QLabel, QLineEdit, QComboBox,
     QPushButton, QVBoxLayout, QHBoxLayout, QFormLayout, QScrollArea,
@@ -79,6 +79,8 @@ class InvoicePage(QWidget):
     def __init__(self):
         super().__init__(); self.zoom=1.; self.data={}; self.values={}; self.result=None
         self.settings=QSettings("OAIC","BulletinAgreage")
+        self.base_font_size=int(self.settings.value("documentFontSize",9))
+        self.logo=QPixmap(os.path.join(os.path.dirname(__file__),"logo.png"))
         self.setMinimumSize(PW,PH)
         self.price=Sticker("PRIX À DÉBATTRE","PRIX À DÉBATTRE À .......... — À CAUSE DE : ................","#a76b00",self)
         self.refusal=Sticker("PRODUIT REFUSÉ À CAUSE DE","........................................................","#c51f3a",self)
@@ -98,23 +100,26 @@ class InvoicePage(QWidget):
     def set_zoom(self,z):
         self.zoom=max(.5,min(1.4,z)); self.setFixedSize(int(PW*self.zoom),int(PH*self.zoom)); self.update()
     def txt(self,p,s,x,y,w=200,size=9,bold=False,align=Qt.AlignLeft):
-        f=QFont("Times New Roman",size); f.setBold(bold); p.setFont(f); p.drawText(QRectF(x,y,w,size*1.7),align,s)
+        size=min(float(size), float(self.base_font_size) if size >= 8 else float(size))
+        f=QFont("Times New Roman",size); f.setBold(bold); p.setFont(f)
+        text=str(s or "")
+        if text:
+            fm=p.fontMetrics()
+            while fm.horizontalAdvance(text) > max(8,w-4) and size > 5.2:
+                size-=0.35; f.setPointSizeF(size); p.setFont(f); fm=p.fontMetrics()
+        p.drawText(QRectF(x,y,w,max(10,size*1.7)),align,text)
+    def set_document_font_size(self,size):
+        self.base_font_size=max(6,min(12,int(size)))
+        self.settings.setValue("documentFontSize",self.base_font_size)
+        self.update()
     def center(self,p,s,x,y,w,size=9,bold=False):self.txt(p,s,x,y,w,size,bold,Qt.AlignCenter)
     def paintEvent(self,e):
         p=QPainter(self); p.setRenderHint(QPainter.Antialiasing); p.scale(self.zoom,self.zoom); p.fillRect(0,0,PW,PH,Qt.white); self.draw(p); p.end()
     def draw_logo(self, p, cx, cy, scale=1.0):
-        old = p.pen()
-        pen = QPen(QColor("#2d6b9f"), 1.5)
-        p.setPen(pen)
-        p.drawLine(cx, cy + 20, cx - 2, cy - 14)
-        for side in (-1, 1):
-            for i in range(5):
-                yy = cy - 11 + i * 6
-                x = cx + side * (7 + i * 1.2)
-                p.drawLine(cx + side * 2, yy, x, yy - 4)
-        p.drawArc(QRectF(cx - 14, cy - 15, 28, 34), 25 * 16, 130 * 16)
-        p.drawArc(QRectF(cx - 14, cy - 15, 28, 34), 205 * 16, 130 * 16)
-        p.setPen(old)
+        if not self.logo.isNull():
+            side=int(68*scale)
+            pix=self.logo.scaled(side,side,Qt.KeepAspectRatio,Qt.SmoothTransformation)
+            p.drawPixmap(int(cx-pix.width()/2),int(cy-pix.height()/2),pix)
 
     def draw(self,p):
         p.setPen(QPen(QColor("#1d4f86"),1))
@@ -207,6 +212,8 @@ class MainWindow(QMainWindow):
         tl = QHBoxLayout(tools)
         tl.setContentsMargins(6, 4, 6, 4)
         self.zoomLabel = QLabel("100%")
+        self.fontSize = QComboBox()
+        self.fontSize.addItems([str(i) for i in range(6,13)])
         for label, fn in [
             ("−", lambda: self.zoom(-0.1)),
             ("+", lambda: self.zoom(0.1)),
@@ -218,10 +225,14 @@ class MainWindow(QMainWindow):
             b.clicked.connect(fn)
             tl.addWidget(b)
         tl.addStretch()
+        tl.addWidget(QLabel("خط"))
+        tl.addWidget(self.fontSize)
         tl.addWidget(self.zoomLabel)
         pv.addWidget(tools)
 
         self.page = InvoicePage()
+        self.fontSize.setCurrentText(str(self.page.base_font_size))
+        self.fontSize.currentTextChanged.connect(lambda s: self.page.set_document_font_size(int(s)))
         self.scroll = QScrollArea()
         self.scroll.setWidget(self.page)
         self.scroll.setWidgetResizable(False)
@@ -457,7 +468,8 @@ class MainWindow(QMainWindow):
                     "data": self.data,
                     "values": self.values,
                     "price": self.page.price.edit.text(),
-                    "refusal": self.page.refusal.edit.text()
+                    "refusal": self.page.refusal.edit.text(),
+                    "documentFontSize": self.page.base_font_size
                 }, f, ensure_ascii=False, indent=2)
             self.statusBar().showMessage("Bulletin enregistré")
 
@@ -474,6 +486,8 @@ class MainWindow(QMainWindow):
             self.values = d.get("values", self.values)
             self.page.price.edit.setText(d.get("price", self.page.price.edit.text()))
             self.page.refusal.edit.setText(d.get("refusal", self.page.refusal.edit.text()))
+            self.page.set_document_font_size(d.get("documentFontSize", self.page.base_font_size))
+            self.fontSize.setCurrentText(str(self.page.base_font_size))
             self.refresh()
             self.set_status(self.data.get("status", "Accepté"))
             self.calculate()
