@@ -80,7 +80,7 @@ class InvoicePage(QWidget):
         super().__init__(); self.zoom=1.; self.data={}; self.values={}; self.result=None
         self.settings=QSettings("OAIC","BulletinAgreage")
         self.base_font_size=int(self.settings.value("documentFontSize",9))
-        self.logo=QPixmap(os.path.join(os.path.dirname(__file__),"logo.png"))
+        self.logo=QPixmap(os.path.join(os.path.dirname(__file__),"logo.svg"))
         self.setMinimumSize(PW,PH)
         self.price=Sticker("PRIX À DÉBATTRE","PRIX À DÉBATTRE À .......... — À CAUSE DE : ................","#a76b00",self)
         self.refusal=Sticker("PRODUIT REFUSÉ À CAUSE DE","........................................................","#c51f3a",self)
