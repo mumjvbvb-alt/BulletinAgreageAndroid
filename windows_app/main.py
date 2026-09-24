@@ -15,15 +15,8 @@ GENERAL = [
     ("producteur","Nom du producteur"),("adresse","Adresse"),("point","Point de collecte"),
     ("agreur","Nom de l’agréeur"),("quantite","Quantité (Qx)"),("bon","N° Bon d’entrée"),
     ("carte","N° de la carte d’identité")]
-QUALITY = [
-    ("poids","Poids spécifique (kg/hl)","76 - 80"),("humidite","Teneur en eau (%)","≤ 17"),
-    ("ergot","Ergot (%)","≤ 1"),("tamis","Matières passant au tamis 20 mm x 2.1 mm (%)","-"),
-    ("debris","Débris végétaux et éléments minéraux (%)","-"),("nuisibles","Graines nuisibles (%)","≤ 0,25"),
-    ("casses","Grains cassés (%)","≤ 5"),("boutes","Grains fortement boutés (%)","≤ 5"),
-    ("roux","Grains roux (%)","-"),("mouchetes","Grains fortement mouchetés (%)","-"),
-    ("punaises","Grains punaisés (%)","-"),("piques","Grains piqués (%)","-"),
-    ("mitadin","Grains mitadinés (%)","-"),("tendre","Blé tendre dans blé dur (%)","≤ 5")]
-
+QUALITY = [("poids","Poids spécifique (kg/hl)",""),("humidite","Teneur en eau (%)",""),("ergot","Ergot (‰)",""),("tamis","Matières qui passent à travers le tamis 20 mm x2.1 mm (%)",""),("debris","Débris végétaux et éléments minéraux (%)",""),("nuisibles","Graines nuisibles (%)",""),("imp1","Total 1ère catégorie (%)",""),("casses","Grains cassés (%)",""),("boutes","Grains fortement boutés (%)",""),("faibleBoutes","Grains faiblement boutés (%)",""),("roux","Grains Roux (%)",""),("mouchetes","Grains fortement mouchetés (%)",""),("punaises","Grains punaisés (%)",""),("piques","Grains piqués (%)",""),("etrangers","Graines étrangères utilisables pour le bétail (%)",""),("imp2","Total 2ème catégorie (%)",""),("mitadin","Grains mitadinés (%)",""),("tendre","Blé tendre dans blé dur (%)",""),("mitTotal","Total mitadinés (%)",""),("sansValeur","Grains sans valeur (%)",""),("inertes","Matières inertes (%)",""),("impDiverses","Total impuretés diverses (%)","")]
+SPECIES_ROWS={"Blé Dur":[("poids","Poids spécifique (kg/hl)","[76 - 80]"),("humidite","Teneur en eau (%)","≤ 17"),("ergot","Ergot (‰)","≤ 1"),("tamis","Matières passant au tamis 20 mm x2.1mm (%)","-"),("debris","Débris végétaux et éléments minéraux (%)","-"),("nuisibles","Graines nuisibles (%)","≤ 0,25"),("imp1","Total 1ère catégorie (%)","[1 - 3]"),("casses","Grains cassés (%)","≤ 5"),("boutes","Grains fortement boutés (%)","≤ 5"),("roux","Grains Roux (%)","-"),("mouchetes","Grains fortement mouchetés (%)","-"),("punaises","Grains punaisés (%)","-"),("piques","Grains piqués (%)","-"),("imp2","Total 2ème catégorie (%)","≤ 10"),("mitadin","Grains mitadinés (%)","-"),("tendre","Blé tendre dans blé dur (%)","≤ 5"),("mitTotal","Total mitadinés (%)","[10 - 20]")],"Blé Tendre":[("poids","Poids spécifique (kg/hl)","[74 - 77]"),("humidite","Teneur en eau (%)","≤ 17"),("ergot","Ergot (‰)","< 0,01"),("tamis","Matières passant au tamis 20 mm x2.1mm (%)","-"),("debris","Débris végétaux et éléments minéraux (%)","-"),("nuisibles","Graines nuisibles (%)","≤ 0,25"),("imp1","Total 1ère catégorie (%)","[1 - 3]"),("casses","Grains cassés (%)","≤ 4"),("punaises","Grains punaisés (%)","≤ 2"),("boutes","Grains fortement boutés (%)","-"),("faibleBoutes","Grains faiblement boutés (%)","-"),("mouchetes","Grains fortement mouchetés (%)","-"),("etrangers","Graines étrangères utilisables pour le bétail (%)","-"),("imp2","Total 2ème catégorie (%)","≤ 6")],"Orge":[("poids","Poids spécifique (kg/hl)","[58 - 62]"),("ergot","Ergot (‰)","≤ 1"),("sansValeur","Grains sans valeur (%)","-"),("inertes","Matières inertes (%)","-"),("impDiverses","Total (%)","≤ 2")]}
 def fnum(v):
     try:return float(str(v).replace(",","."))
     except:return None
@@ -165,40 +158,32 @@ class InvoicePage(QWidget):
         self.txt(p,"Résultat de l’agréage :",48,213,145,9,True); ok=self.data.get("status")=="Accepté"
         self.center(p,"◉" if ok else "○",198,213,30,12,True);self.txt(p,"Accepté",225,213,70,9,True)
         self.center(p,"○" if ok else "◉",360,213,30,12,True);self.txt(p,"Refusé",390,213,70,9,True)
-        top=300; widths=[238,82,72,95,95,112]; xs=[38]
-        for w in widths:xs.append(xs[-1]+w)
-        heights=[34,23,23,45,58,28,23,23,23,40,23,23,23,30,30,30,28]
-        rows=[("Poids spécifique (kg/hl)","[76 - 80]","poids"),("Teneur en eau (%)","≤ 17","humidite"),
-              ("Ergot (%)","≤ 1","ergot"),("Matières passant au tamis 20 mm x 2.1 mm (%)","-","tamis"),
-              ("Débris végétaux et éléments minéraux (%)","-","debris"),("Graines nuisibles (%)","≤ 0,25","nuisibles"),
-              ("Total 1ère catégorie (%)","[1 - 3]","imp1"),("Grains cassés (%)","≤ 5","casses"),
-              ("Grains fortement boutés (%)","≤ 5","boutes"),("Grains Roux (%)","-","roux"),
-              ("Grains fortement mouchetés (%)","-","mouchetes"),("Grains punaisés (%)","-","punaises"),
-              ("Grains piqués (%)","-","piques"),("Total 2ème catégorie (%)","≤ 10","imp2"),
-              ("Grains mitadinés (%)","-","mit"),("Blé tendre dans blé dur (%)","≤ 5","tendre"),("Total mitadinés (%)","[10 - 20]","mit")]
-        p.setBrush(QColor("#eef6ff"));p.drawRect(QRectF(xs[0],top,xs[-1]-xs[0],34))
-        for x in xs[1:-1]:p.drawLine(x,top,x,top+34+sum(heights))
-        self.center(p,"Paramètres",xs[0],top+22,widths[0],10,True);self.center(p,"Limites",xs[1],top+18,widths[1],9,True)
-        self.center(p,"Valeurs",xs[2],top+22,widths[2],9,True);self.center(p,"Bonification",xs[3],top+15,widths[3],8,True)
-        self.center(p,"Réfaction",xs[4],top+15,widths[4],8,True);self.center(p,"Observation",xs[5],top+22,widths[5],8,True)
-        y=top+34
-        for (lab,lim,key),h in zip(rows,heights):
-            p.setBrush(Qt.NoBrush);p.drawRect(QRectF(xs[0],y,xs[-1]-xs[0],h))
-            self.txt(p,lab,xs[0]+5,y+8,widths[0]-10,7.1,key.startswith("imp"))
-            self.center(p,lim,xs[1],y+9,widths[1],7.5);self.center(p,self.values.get(key,""),xs[2],y+9,widths[2],8,True)
-            b=r="0,00"
-            if self.result and key in self.result[5]:
-                bb,rr=self.result[5][key];b=f"{bb:+.2f}".replace(".",",");r=f"{-rr:+.2f}".replace(".",",")
-            self.center(p,b,xs[3],y+9,widths[3],7.5);self.center(p,r,xs[4],y+9,widths[4],7.5);self.center(p,"-",xs[5],y+9,widths[5],7.5);y+=h
-        self.center(p,"Total des Bonifications et Réfactions",xs[0],y+18,xs[2]-xs[0],9,True)
-        b=r=0
-        if self.result:b=self.result[0];r=self.result[1]
-        self.center(p,f"+ {b:.2f}".replace(".",","),xs[3],y+18,widths[3],9,True);self.center(p,f"- {r:.2f}".replace(".",","),xs[4],y+18,widths[4],9,True)
-        self.txt(p,"Référence : Décret n°88-152 du 26 juillet 1988 fixant les barèmes de bonification et de réfaction applicables aux céréales",38,y+40,718,7)
-        self.txt(p,"et aux légumes secs, 1ère partie : Relations entre producteurs et organismes stockeurs.",38,y+52,718,7)
-        self.txt(p,"Producteur",38,y+82,180,9,True);self.txt(p,"N° de la carte d’identité",38,y+101,210,8,True)
-        self.txt(p,self.data.get("carte","................................"),225,y+101,220,8);self.txt(p,"Agréeur",580,y+82,150,9,True)
-        self.txt(p,self.data.get("agreur","................................"),580,y+101,170,8)
+        top=290; widths=[238,82,72,95,95,112]; xs=[38]
+        for w in widths: xs.append(xs[-1]+w)
+        species=self.data.get("espece","Blé Dur"); rows=SPECIES_ROWS.get(species,SPECIES_ROWS["Blé Dur"])
+        header_h=38; p.setBrush(QColor("#eef6ff")); p.drawRect(QRectF(xs[0],top,xs[-1]-xs[0],header_h))
+        self.center(p,"Paramètres",xs[0],top+25,widths[0],10,True); self.center(p,"Limites",xs[1],top+18,widths[1],8.5,True)
+        self.center(p,"(sans bonification ni réfaction)",xs[1],top+31,widths[1],5.8,True); self.center(p,"Valeurs",xs[2],top+25,widths[2],9,True)
+        self.center(p,"Bonification",xs[3],top+16,widths[3],7.5,True); self.center(p,"(D.A.)",xs[3],top+29,widths[3],7.5,True)
+        self.center(p,"Réfaction",xs[4],top+16,widths[4],7.5,True); self.center(p,"(D.A.)",xs[4],top+29,widths[4],7.5,True)
+        self.center(p,"Observation",xs[5],top+25,widths[5],7.5,True); y=top+header_h
+        for key,lab,lim in rows:
+            h=48 if len(lab)>55 else 34; p.setBrush(Qt.NoBrush); p.drawRect(QRectF(xs[0],y,xs[-1]-xs[0],h))
+            self.txt(p,lab,xs[0]+5,y+h/2+4,widths[0]-10,7.2,False); self.center(p,lim,xs[1],y+h/2+4,widths[1],7.5,True)
+            self.center(p,self.values.get(key,""),xs[2],y+h/2+4,widths[2],8,True); bb=rr=0.0
+            if self.result and key in self.result[5]: bb,rr=self.result[5][key]
+            self.center(p,f"{bb:.2f}".replace(".",","),xs[3],y+h/2+4,widths[3],7.2); self.center(p,f"{rr:.2f}".replace(".",","),xs[4],y+h/2+4,widths[4],7.2)
+            note=self.result[6][0] if self.result and self.result[6] else ""; self.center(p,note[:16],xs[5],y+h/2+4,widths[5],5.8); y+=h
+        p.drawRect(QRectF(xs[0],y,xs[-1]-xs[0],36)); self.center(p,"Total des Bonifications et Réfactions",xs[0],y+23,xs[2]-xs[0],9,True)
+        tb=tr=0.0
+        if self.result: tb,tr=self.result[0],self.result[1]
+        self.center(p,f"{tb:.2f}".replace(".",","),xs[3],y+23,widths[3],9,True); self.center(p,f"{tr:.2f}".replace(".",","),xs[4],y+23,widths[4],9,True)
+        footer_y=y+58
+        self.txt(p,"Référence : Décret n°88-152 du 26 juillet 1988 fixant les barèmes de bonification et de réfaction applicables aux céréales",38,footer_y,718,7)
+        self.txt(p,"et aux légumes secs, 1ère partie : Relations entre producteurs et organismes stockeurs.",38,footer_y+12,718,7)
+        self.txt(p,"Producteur",38,footer_y+42,180,9,True);self.txt(p,"N° de la carte d’identité",38,footer_y+61,210,8,True)
+        self.txt(p,self.data.get("carte","................................"),225,footer_y+61,220,8);self.txt(p,"Agréeur",580,footer_y+42,150,9,True)
+        self.txt(p,self.data.get("agreur","................................"),580,footer_y+61,170,8)
     def set_values(self,d,v,r):self.data=d;self.values=v;self.result=r;self.update()
 
 class MainWindow(QMainWindow):
@@ -332,9 +317,10 @@ class MainWindow(QMainWindow):
         self.gfields = {}
 
         combo = QComboBox()
-        combo.addItems(["Blé Dur", "Blé Tendre", "Orge", "Autre"])
+        combo.addItems(["Blé Dur", "Blé Tendre", "Orge"])
         self.gfields["espece"] = combo
         form.addRow("Espèce", combo)
+        combo.currentTextChanged.connect(self.on_species_changed)
 
         for k, lab in [("date", "Date")] + GENERAL:
             e = QLineEdit()
@@ -384,6 +370,7 @@ class MainWindow(QMainWindow):
         form = QFormLayout(box)
         form.setLabelAlignment(Qt.AlignRight)
         self.qfields = {}
+        self.qlabels = {}
         for k, lab, lim in QUALITY:
             e = QLineEdit()
             e.setObjectName("qualityInput")
@@ -391,13 +378,25 @@ class MainWindow(QMainWindow):
             e.setAlignment(Qt.AlignCenter)
             e.setPlaceholderText(lim)
             self.qfields[k] = e
-            form.addRow(lab, e)
+            labWidget = QLabel(lab)
+            self.qlabels[k] = labWidget
+            form.addRow(labWidget, e)
             e.textChanged.connect(self.on_input_changed)
         scroll = QScrollArea()
         scroll.setWidgetResizable(True)
         scroll.setWidget(box)
         l.addWidget(scroll)
+        self.update_quality_visibility()
         return w
+
+    def update_quality_visibility(self):
+        species=self.gfields["espece"].currentText() if hasattr(self,"gfields") else "Blé Dur"
+        active={r[0] for r in SPECIES_ROWS.get(species,SPECIES_ROWS["Blé Dur"])}
+        for k,e in self.qfields.items():
+            e.setVisible(k in active); self.qlabels[k].setVisible(k in active)
+
+    def on_species_changed(self,species):
+        self.data["espece"]=species; self.update_quality_visibility(); self.calculate()
 
     def bottom_bar(self):
         f = QFrame()
